@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis TKA PKN SMK</title>
+    <!-- Memuat Tailwind CSS untuk Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Menggunakan font Inter */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        .quiz-container {
+            min-height: 100vh;
+        }
+        .card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            background-color: white;
+            padding: 1.5rem;
+        }
+        .option-button {
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+        }
+        .option-button:hover {
+            background-color: #f0f4f8;
+        }
+        .selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        /* Style untuk feedback (Benar/Salah) */
+        .correct {
+            background-color: #d1fae5; /* green-100 */
+            border-color: #10b981; /* green-500 */
+            font-weight: 600;
+        }
+        .incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+            font-weight: 600;
+        }
+        /* Style untuk tombol navigasi */
+        .nav-btn {
+            @apply p-2 text-sm font-semibold rounded-lg transition duration-150 text-center;
+            border: 1px solid #e5e7eb;
+            background-color: #ffffff;
+        }
+        .nav-active {
+            @apply bg-blue-500 text-white border-blue-600;
+        }
+        .nav-correct {
+            @apply bg-green-500 text-white border-green-600;
+        }
+        .nav-incorrect {
+            @apply bg-red-500 text-white border-red-600;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="quiz-container flex items-start justify-center p-4">
+        
+        <!-- 1. Navigation Panel (Hanya terlihat di layar besar/tablet ke atas) -->
+        <div id="navigation-panel" class="hidden md:block w-full md:w-64 mr-6 sticky top-4 self-stretch">
+            <div class="card p-4 h-[90vh] overflow-y-auto">
+                <h3 class="text-lg font-bold text-gray-800 mb-3 border-b pb-2">Navigasi Soal</h3>
+                <div id="question-index-container" class="grid grid-cols-5 gap-2">
+                    <!-- Tombol 1-50 akan dimuat di sini oleh JavaScript -->
+                </div>
+            </div>
+        </div>
+        <!-- AKHIR Navigation Panel -->
+
+        <div id="quiz-area" class="w-full max-w-2xl">
+            <!-- Header Kuis -->
+            <header class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Ujian TKA PKN SMK</h1>
+                <p class="text-sm text-gray-500">Total <span id="total-questions"></span> Soal</p>
+            </header>
+
+            <!-- Loading State -->
+            <div id="loading" class="text-center p-8 text-gray-600">
+                Memuat soal...
+            </div>
+
+            <!-- Area Pertanyaan -->
+            <div id="question-card" class="card hidden">
+                <div class="mb-4 flex justify-between items-center">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-blue-600 bg-blue-100 px-3 py-1 rounded-full">PKN SMK</span>
+                    <span class="text-sm font-medium text-gray-700">Soal <span id="current-question-number"></span> dari <span id="total-questions-bottom"></span></span>
+                </div>
+
+                <h2 id="question-text" class="text-lg md:text-xl font-semibold text-gray-900 mb-6"></h2>
+                
+                <div id="options-container" class="space-y-3">
+                    <!-- Opsi Jawaban Dimuat di Sini -->
+                </div>
+
+                <!-- Petunjuk/Hint (opsional) -->
+                <div id="hint-container" class="mt-4 p-3 text-sm bg-yellow-50 text-yellow-800 rounded-lg hidden">
+                    <span class="font-bold">Petunjuk:</span> <span id="hint-text"></span>
+                </div>
+
+                <!-- Penjelasan/Rationale -->
+                <div id="rationale-container" class="mt-4 p-4 text-sm rounded-lg border hidden">
+                    <span class="font-bold block mb-1" id="rationale-title"></span>
+                    <p id="rationale-text" class="text-gray-700"></p>
+                </div>
+
+                <!-- Tombol Aksi -->
+                <div class="mt-6 flex justify-between gap-4">
+                    <button id="check-button" class="w-1/2 bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition duration-150 disabled:bg-gray-400" disabled>
+                        Periksa Jawaban
+                    </button>
+                    <button id="next-button" class="w-1/2 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-300 transition duration-150 disabled:bg-gray-400">
+                        Soal Berikutnya
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Area Hasil Akhir -->
+            <div id="result-card" class="card text-center p-8 hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Hasil Kuis Anda</h2>
+                <p class="text-lg text-gray-600 mb-4">Anda berhasil menjawab <span id="final-score" class="font-bold text-green-600 text-2xl"></span> dari <span id="final-total"></span> soal dengan benar.</p>
+                <div class="text-5xl mb-6" id="result-emoji">🎉</div>
+                <button onclick="window.location.reload()" class="bg-blue-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-blue-700 transition duration-150">
+                    Mulai Ulang Kuis
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- DATA KUIS DARI FILE SEBELUMNYA (DISINGKAT AGAR MUDAH DIBACA) ---
+        const rawQuizData = {
+            "Rk": [
+                {
+                    "ABa": 0,
+                    "question": "Pancasila memiliki kedudukan sebagai sumber dari segala sumber hukum di Indonesia. Kedudukan ini disebut sebagai...",
+                    "hint": "Coba ingat istilah hukum yang diberikan oleh Hans Kelsen untuk norma dasar yang menjadi fondasi sebuah negara.",
+                    "HE": [
+                        {"text": "Nilai Dasar", "Tr": false, "P8": "Nilai Dasar adalah esensi dari sila-sila Pancasila, sementara Nilai Instrumental adalah penjabaran operasionalnya."},
+                        {"text": "Filsafat Bangsa", "Tr": false, "P8": "Pancasila sebagai filsafat bangsa adalah pandangan hidup yang diyakini kebenarannya, bukan kedudukan hukum tertinggi."},
+                        {"text": "Cita Hukum", "Tr": true, "P8": "Pancasila sebagai Cita Hukum (Staatsfundamentalnorm) menempati kedudukan tertinggi sebagai norma fundamental negara yang menjadi acuan semua peraturan hukum."},
+                        {"text": "Wawasan Kebangsaan", "Tr": false, "P8": "Wawasan Kebangsaan berkaitan dengan cara pandang bangsa Indonesia terhadap diri dan lingkungannya."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Nilai luhur yang terkandung dalam sila 'Persatuan Indonesia' adalah...",
+                    "hint": "Fokus pada inti makna dari 'Persatuan Indonesia' sebagai landasan untuk menjaga keutuhan bangsa.",
+                    "HE": [
+                        {"text": "Keadilan sosial dan keseimbangan", "Tr": false, "P8": "Keadilan sosial adalah nilai utama Sila Kelima, bukan Sila Ketiga."},
+                        {"text": "Musyawarah dan kerakyatan", "Tr": false, "P8": "Musyawarah dan kerakyatan adalah nilai utama Sila Keempat, bukan Sila Ketiga."},
+                        {"text": "Rela berkorban dan cinta tanah air", "Tr": true, "P8": "Sila Persatuan Indonesia menekankan pentingnya mendahulukan kepentingan bangsa di atas kepentingan pribadi/golongan, yang diwujudkan melalui rela berkorban dan cinta tanah air."},
+                        {"text": "Ketuhanan dan toleransi", "Tr": false, "P8": "Ketuhanan dan toleransi adalah nilai utama Sila Pertama, bukan Sila Ketiga."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Contoh pengamalan sila pertama, 'Ketuhanan Yang Maha Esa', yang paling tepat dilakukan oleh siswa SMK yang berbeda keyakinan adalah...",
+                    "hint": "Sila ini menyoroti konsep **Toleransi** dan **Kebebasan Beragama**.",
+                    "HE": [
+                        {"text": "Mengikuti semua kegiatan keagamaan teman tanpa kecuali.", "Tr": false, "P8": "Mengikuti semua kegiatan bisa melanggar keyakinan pribadi; pengamalan yang benar adalah menghormati dan memberi kebebasan."},
+                        {"text": "Menghormati teman yang sedang beribadah dan tidak mengganggu waktu ibadahnya.", "Tr": true, "P8": "Toleransi antarumat beragama diwujudkan dengan menghormati dan tidak mengganggu jalannya ibadah orang lain, yang merupakan esensi dari Sila Pertama."},
+                        {"text": "Mewajibkan teman lain untuk mengikuti ajaran agamanya.", "Tr": false, "P8": "Hal ini bertentangan dengan prinsip kebebasan beragama yang dijamin oleh Sila Pertama."},
+                        {"text": "Tidak peduli dengan kegiatan keagamaan teman yang berbeda keyakinan.", "Tr": false, "P8": "Sikap tidak peduli menunjukkan kurangnya toleransi dan penghormatan sosial."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Lembaga negara yang berhak mengubah dan menetapkan Undang-Undang Dasar adalah...",
+                    "hint": "Lembaga ini merupakan pemegang kekuasaan tertinggi di awal kemerdekaan, meskipun wewenangnya telah disesuaikan setelah amandemen.",
+                    "HE": [
+                        {"text": "Dewan Perwakilan Rakyat (DPR)", "Tr": false, "P8": "DPR memiliki fungsi legislasi, tetapi perubahan UUD adalah wewenang lembaga lain."},
+                        {"text": "Mahkamah Konstitusi (MK)", "Tr": false, "P8": "MK berwenang menguji UU terhadap UUD, bukan mengubahnya."},
+                        {"text": "Majelis Permusyawaratan Rakyat (MPR)", "Tr": true, "P8": "Menurut UUD 1945 Pasal 3 Ayat (1), MPR berwenang mengubah dan menetapkan UUD."},
+                        {"text": "Dewan Perwakilan Daerah (DPD)", "Tr": false, "P8": "DPD ikut serta dalam pembahasan RUU tertentu, namun tidak memiliki wewenang mengubah UUD."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Bentuk negara Indonesia menurut Undang-Undang Dasar Negara Republik Indonesia Tahun 1945 adalah...",
+                    "hint": "Pasal 1 ayat 1 UUD 1945 secara eksplisit menyebutkan bentuk negara kita.",
+                    "HE": [
+                        {"text": "Republik Konstitusional", "Tr": false, "P8": "Indonesia memang berbentuk republik yang berdasarkan konstitusi, tetapi istilah resmi dalam UUD adalah 'Negara Kesatuan yang berbentuk Republik'."},
+                        {"text": "Negara Kesatuan yang berbentuk Republik", "Tr": true, "P8": "Hal ini ditegaskan dalam Pasal 1 Ayat (1) UUD 1945: 'Negara Indonesia adalah negara kesatuan yang berbentuk republik'."},
+                        {"text": "Serikat (Federasi)", "Tr": false, "P8": "Serikat berarti kekuasaan terbagi antara pusat dan negara bagian, yang bukan bentuk negara Indonesia saat ini."},
+                        {"text": "Monarki Parlementer", "Tr": false, "P8": "Monarki dipimpin oleh raja/ratu, dan Indonesia menganut sistem pemerintahan presidensial, bukan parlementer."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Konsep kesatuan yang mencakup kesatuan wilayah, politik, sosial, budaya, serta pertahanan dan keamanan NKRI disebut...",
+                    "hint": "Cari istilah yang merangkum pandangan menyeluruh Indonesia sebagai satu kesatuan utuh.",
+                    "HE": [
+                        {"text": "Ketahanan Nasional", "Tr": false, "P8": "Ketahanan Nasional adalah kondisi dinamis bangsa, bukan konsep kesatuan wilayah secara komprehensif."},
+                        {"text": "Otonomi Daerah", "Tr": false, "P8": "Otonomi Daerah adalah kewenangan daerah mengurus urusan pemerintahan, bukan konsep kesatuan seluruh aspek."},
+                        {"text": "Bela Negara", "Tr": false, "P8": "Bela Negara adalah sikap dan perilaku warga negara, bukan konsep dasar kesatuan bangsa."},
+                        {"text": "Wawasan Nusantara", "Tr": true, "P8": "Wawasan Nusantara adalah cara pandang dan sikap bangsa Indonesia mengenai diri dan lingkungannya, mengutamakan kesatuan wilayah dan persatuan bangsa dalam segenap aspek kehidupan."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Ancaman non-militer yang paling relevan dengan kondisi globalisasi dan perkembangan teknologi saat ini adalah...",
+                    "hint": "Fokus pada ancaman yang menggunakan teknologi informasi dan bersifat non-fisik, yang menyerang aspek ideologi dan sosial budaya.",
+                    "HE": [
+                        {"text": "Agresi militer dari negara lain", "Tr": false, "P8": "Agresi militer termasuk dalam kategori ancaman militer."},
+                        {"text": "Tindakan spionase dan sabotase", "Tr": false, "P8": "Spionase dan sabotase termasuk ancaman militer/hibrida."},
+                        {"text": "Penyebaran ideologi radikal dan terorisme", "Tr": true, "P8": "Penyebaran ideologi radikal dan terorisme adalah ancaman non-militer di bidang ideologi dan politik yang sangat dipengaruhi oleh globalisasi dan teknologi informasi."},
+                        {"text": "Konflik batas wilayah antarnegara", "Tr": false, "P8": "Konflik batas wilayah termasuk ancaman militer."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Ciri utama sistem demokrasi Pancasila adalah...",
+                    "hint": "Pikirkan tentang metode pengambilan keputusan yang paling dihormati dalam budaya Indonesia.",
+                    "HE": [
+                        {"text": "Keputusan diambil berdasarkan voting mayoritas tanpa batas.", "Tr": false, "P8": "Demokrasi Pancasila mengutamakan musyawarah mufakat, bukan sekadar voting tanpa batas."},
+                        {"text": "Kekuasaan penuh berada di tangan Presiden (Executive Heavy).", "Tr": false, "P8": "Sistem ini menekankan keseimbangan kekuasaan antarlembaga, bukan pemusatan di eksekutif."},
+                        {"text": "Mengutamakan musyawarah untuk mencapai mufakat dalam pengambilan keputusan.", "Tr": true, "P8": "Musyawarah untuk mufakat adalah ciri khas yang membedakan Demokrasi Pancasila dari demokrasi liberal yang mengutamakan suara terbanyak (voting)."},
+                        {"text": "Adanya kebebasan individu yang mutlak tanpa intervensi negara.", "Tr": false, "P8": "Demokrasi Pancasila menjamin kebebasan, tetapi disertai tanggung jawab dan batasan sesuai nilai-nilai Pancasila."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Lembaga negara yang bertugas menguji peraturan perundang-undangan di bawah undang-undang (seperti Peraturan Pemerintah) terhadap Undang-Undang adalah...",
+                    "hint": "Ini adalah lembaga peradilan tertinggi yang memegang kekuasaan kehakiman bersama dengan MK.",
+                    "HE": [
+                        {"text": "Mahkamah Konstitusi (MK)", "Tr": false, "P8": "MK berwenang menguji Undang-Undang terhadap UUD 1945 (judicial review)."},
+                        {"text": "Mahkamah Agung (MA)", "Tr": true, "P8": "MA berwenang menguji peraturan perundang-undangan di bawah Undang-Undang terhadap Undang-Undang (hak uji materiil)."},
+                        {"text": "Dewan Perwakilan Rakyat (DPR)", "Tr": false, "P8": "DPR memiliki fungsi legislasi, bukan pengujian materiil peraturan di bawah UU."},
+                        {"text": "Komisi Yudisial (KY)", "Tr": false, "P8": "KY berwenang menjaga keluhuran martabat hakim, bukan menguji peraturan."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Prinsip politik luar negeri Indonesia yang paling mendasar adalah...",
+                    "hint": "Prinsip ini mencerminkan sikap netral sekaligus komitmen Indonesia terhadap perdamaian dunia.",
+                    "HE": [
+                        {"text": "Pro-Barat", "Tr": false, "P8": "Prinsip Indonesia tidak memihak salah satu blok kekuatan dunia."},
+                        {"text": "Bebas Aktif", "Tr": true, "P8": "Bebas berarti tidak terikat pada salah satu blok, dan Aktif berarti turut serta dalam mewujudkan perdamaian dunia."},
+                        {"text": "Tangan Besi", "Tr": false, "P8": "Istilah ini mengacu pada sistem pemerintahan yang otoriter."},
+                        {"text": "Blok Sentral", "Tr": false, "P8": "Ini adalah istilah yang digunakan dalam sejarah Perang Dunia I dan bukan prinsip luar negeri Indonesia."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Tujuan utama pemberian otonomi daerah di Indonesia adalah...",
+                    "hint": "Fokus pada manfaat desentralisasi bagi pemerintah daerah dan masyarakat setempat.",
+                    "HE": [
+                        {"text": "Memusatkan seluruh kekuasaan pemerintahan di pusat.", "Tr": false, "P8": "Otonomi daerah bertujuan untuk desentralisasi (penyerahan wewenang), bukan sentralisasi (pemusatan wewenang)."},
+                        {"text": "Meningkatkan efisiensi dan efektivitas penyelenggaraan pemerintahan daerah dan pelayanan publik.", "Tr": true, "P8": "Otonomi daerah diberikan agar daerah dapat mengelola urusan sendiri secara mandiri, sehingga pelayanan publik dan pembangunan lebih tepat sasaran."},
+                        {"text": "Mewajibkan daerah mengurus seluruh urusan pemerintahan tanpa terkecuali.", "Tr": false, "P8": "Ada urusan pemerintahan yang tetap menjadi kewenangan pemerintah pusat (misalnya politik luar negeri, pertahanan)."},
+                        {"text": "Mengurangi keterlibatan masyarakat dalam proses pembangunan daerah.", "Tr": false, "P8": "Otonomi daerah justru mendorong partisipasi masyarakat yang lebih besar."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Pasal 27 Ayat (2) UUD 1945 mengatur tentang...",
+                    "hint": "Pasal ini sering disebut sebagai jaminan dasar bagi kesejahteraan sosial ekonomi warga negara.",
+                    "HE": [
+                        {"text": "Hak untuk hidup dan mempertahankan hidup", "Tr": false, "P8": "Diatur dalam Pasal 28A UUD 1945."},
+                        {"text": "Hak berserikat dan berkumpul, serta mengeluarkan pendapat", "Tr": false, "P8": "Diatur dalam Pasal 28 UUD 1945."},
+                        {"text": "Hak atas pekerjaan dan penghidupan yang layak bagi kemanusiaan", "Tr": true, "P8": "Pasal 27 Ayat (2) secara eksplisit menjamin hak warga negara atas pekerjaan dan penghidupan yang layak, yang merupakan bagian dari Hak Asasi Ekonomi."},
+                        {"text": "Wewenang Presiden untuk menyatakan perang", "Tr": false, "P8": "Diatur dalam Pasal 11 UUD 1945."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Di Indonesia, terdapat prinsip kedaulatan rakyat yang diatur dalam UUD 1945. Prinsip ini dilaksanakan menurut UUD dan melalui...",
+                    "hint": "Kedaulatan rakyat dilakukan oleh siapa? Pikirkan tentang lembaga-lembaga perwakilan yang dipilih.",
+                    "HE": [
+                        {"text": "Sistem presidensial murni", "Tr": false, "P8": "Kedaulatan rakyat diwujudkan melalui lembaga-lembaga yang diatur UUD, bukan hanya sistem presidensial."},
+                        {"text": "Peraturan Pemerintah Pengganti Undang-Undang (Perpu)", "Tr": false, "P8": "Perpu adalah bagian dari peraturan perundang-undangan, bukan mekanisme pelaksanaan kedaulatan rakyat."},
+                        {"text": "Lembaga-lembaga negara yang menjalankan fungsi kedaulatan", "Tr": true, "P8": "Kedaulatan rakyat dilaksanakan secara penuh melalui mekanisme perwakilan oleh lembaga-lembaga negara yang ditetapkan UUD (MPR, DPR, DPD, Presiden, MA, MK, KY)."},
+                        {"text": "Penentuan oleh lembaga adat dan tokoh masyarakat", "Tr": false, "P8": "Meskipun penting, lembaga adat tidak secara formal melaksanakan kedaulatan rakyat di tingkat negara."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Fungsi Dewan Perwakilan Rakyat (DPR) yang berkaitan dengan pembahasan dan persetujuan Rancangan Undang-Undang (RUU) adalah fungsi...",
+                    "hint": "Apa istilah umum yang digunakan untuk proses pembuatan atau pembentukan hukum?",
+                    "HE": [
+                        {"text": "Fungsi Anggaran", "Tr": false, "P8": "Fungsi Anggaran terkait dengan pembahasan dan persetujuan APBN."},
+                        {"text": "Fungsi Pengawasan", "Tr": false, "P8": "Fungsi Pengawasan terkait dengan pengawasan pelaksanaan undang-undang dan APBN."},
+                        {"text": "Fungsi Legislasi", "Tr": true, "P8": "Fungsi Legislasi (pembuatan undang-undang) adalah fungsi utama DPR dalam membahas dan menyetujui RUU bersama Presiden."},
+                        {"text": "Fungsi Yudikatif", "Tr": false, "P8": "Fungsi Yudikatif dijalankan oleh Mahkamah Agung dan Mahkamah Konstitusi."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Dalam sistem hukum Indonesia, yang dimaksud dengan *yurisprudensi* adalah...",
+                    "hint": "Istilah ini berasal dari praktik di lingkungan peradilan dan seringkali menjadi rujukan untuk kasus yang belum diatur secara jelas dalam undang-undang.",
+                    "HE": [
+                        {"text": "Peraturan perundang-undangan yang dibuat oleh pemerintah daerah.", "Tr": false, "P8": "Itu adalah Peraturan Daerah (Perda)."},
+                        {"text": "Kebiasaan atau tradisi yang diakui sebagai hukum.", "Tr": false, "P8": "Itu adalah Hukum Adat atau kebiasaan."},
+                        {"text": "Keputusan hakim terdahulu yang dijadikan dasar oleh hakim berikutnya dalam menyelesaikan kasus yang serupa.", "Tr": true, "P8": "Yurisprudensi adalah putusan-putusan pengadilan yang telah berkekuatan hukum tetap dan dijadikan pedoman dalam penegakan hukum."},
+                        {"text": "Doktrin atau pendapat para ahli hukum terkemuka.", "Tr": false, "P8": "Itu adalah Doktrin, salah satu sumber hukum formal lainnya."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Salah satu peran penting ASEAN bagi Indonesia adalah sebagai...",
+                    "hint": "Organisasi ini didirikan dengan tujuan utama untuk membangun komunitas yang damai di kawasan regional kita.",
+                    "HE": [
+                        {"text": "Pesaing utama dalam bidang teknologi dan militer.", "Tr": false, "P8": "ASEAN bertujuan untuk kerja sama dan persahabatan, bukan persaingan utama."},
+                        {"text": "Wadah kerja sama untuk menciptakan stabilitas dan perdamaian regional di Asia Tenggara.", "Tr": true, "P8": "Tujuan utama ASEAN adalah mempercepat pertumbuhan ekonomi, kemajuan sosial, dan menjamin perdamaian dan stabilitas regional."},
+                        {"text": "Forum eksklusif untuk negara-negara dengan sistem politik otoriter.", "Tr": false, "P8": "ASEAN mencakup negara-negara dengan beragam sistem politik dan tidak eksklusif untuk sistem otoriter."},
+                        {"text": "Aliansi militer yang setara dengan NATO.", "Tr": false, "P8": "ASEAN bukan aliansi militer, melainkan organisasi kerja sama regional."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Organisasi yang bertugas menjaga keamanan dan ketertiban masyarakat serta melakukan penegakan hukum adalah...",
+                    "hint": "Lembaga ini dikenal sebagai penegak hukum sipil utama di tingkat nasional.",
+                    "HE": [
+                        {"text": "Tentara Nasional Indonesia (TNI)", "Tr": false, "P8": "TNI bertugas mempertahankan kedaulatan negara dan keutuhan wilayah, serta melindungi segenap bangsa."},
+                        {"text": "Kementerian Pertahanan", "Tr": false, "P8": "Kementerian ini bertugas merumuskan kebijakan pertahanan."},
+                        {"text": "Kepolisian Negara Republik Indonesia (POLRI)", "Tr": true, "P8": "Tugas utama POLRI adalah memelihara keamanan dan ketertiban masyarakat, menegakkan hukum, serta memberikan perlindungan, pengayoman, dan pelayanan kepada masyarakat."},
+                        {"text": "Satuan Polisi Pamong Praja (Satpol PP)", "Tr": false, "P8": "Satpol PP bertugas menjaga ketertiban umum di daerah dan penegakan Perda."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Pengakuan dan penghormatan terhadap keberagaman suku, agama, ras, dan antar-golongan (SARA) adalah perwujudan sila ke-...",
+                    "hint": "Meskipun semua sila relevan, sila pertama secara langsung mengatur hubungan antarmanusia dalam konteks keyakinan.",
+                    "HE": [
+                        {"text": "Sila Pertama (Ketuhanan Yang Maha Esa)", "Tr": true, "P8": "Terkait dengan toleransi beragama dan keyakinan."},
+                        {"text": "Sila Kedua (Kemanusiaan yang Adil dan Beradab)", "Tr": false, "P8": "Terkait dengan pengakuan martabat manusia dan persamaan derajat."},
+                        {"text": "Sila Ketiga (Persatuan Indonesia)", "Tr": false, "P8": "Terkait dengan menjaga kesatuan dan keutuhan bangsa."},
+                        {"text": "Sila Kelima (Keadilan Sosial bagi Seluruh Rakyat Indonesia)", "Tr": false, "P8": "Terkait dengan keseimbangan hak dan kewajiban serta pemerataan."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Perbedaan mendasar antara Hak Asasi Manusia (HAM) dan Kewajiban Asasi Manusia (KAM) adalah...",
+                    "hint": "Coba definisikan 'hak' dan 'kewajiban' dalam konteks kehidupan sehari-hari Anda.",
+                    "HE": [
+                        {"text": "HAM diberikan oleh negara, KAM diberikan oleh Tuhan.", "Tr": false, "P8": "Keduanya pada dasarnya diberikan oleh Tuhan, tetapi HAM dijamin oleh negara."},
+                        {"text": "HAM adalah sesuatu yang harus diterima, KAM adalah sesuatu yang harus dilaksanakan.", "Tr": true, "P8": "Hak adalah sesuatu yang harus diterima atau didapatkan, sedangkan Kewajiban adalah sesuatu yang harus dilaksanakan atau dilakukan dengan penuh tanggung jawab."},
+                        {"text": "HAM bersifat terbatas, KAM bersifat tidak terbatas.", "Tr": false, "P8": "Keduanya memiliki batasan, terutama HAM dibatasi oleh hak orang lain."},
+                        {"text": "HAM hanya berlaku di Indonesia, KAM berlaku secara universal.", "Tr": false, "P8": "HAM bersifat universal, berlaku untuk semua manusia di mana pun."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Dalam konteks hak politik warga negara, hak untuk memilih dan dipilih dalam pemilihan umum (Pemilu) disebut...",
+                    "hint": "Hak ini berkaitan dengan pemilihan atau proses elektif.",
+                    "HE": [
+                        {"text": "Hak interpelasi", "Tr": false, "P8": "Hak interpelasi adalah hak DPR untuk meminta keterangan kepada pemerintah."},
+                        {"text": "Hak inisiatif", "Tr": false, "P8": "Hak inisiatif adalah hak DPR untuk mengajukan RUU."},
+                        {"text": "Hak legalitas", "Tr": false, "P8": "Tidak dikenal sebagai istilah hak politik warga negara yang umum."},
+                        {"text": "Hak elektoral", "Tr": true, "P8": "Hak elektoral (memilih dan dipilih) adalah hak politik mendasar warga negara dalam negara demokrasi."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Yang dimaksud dengan *ius soli* dalam penentuan status kewarganegaraan adalah...",
+                    "hint": "Fokus pada kata 'soli' yang dalam bahasa Latin berarti 'tanah' atau 'tempat'.",
+                    "HE": [
+                        {"text": "Status kewarganegaraan ditentukan berdasarkan keturunan orang tua.", "Tr": false, "P8": "Itu adalah prinsip *ius sanguinis*."},
+                        {"text": "Status kewarganegaraan ditentukan berdasarkan tempat/negara kelahiran.", "Tr": true, "P8": "Prinsip *ius soli* (hukum tempat) menetapkan kewarganegaraan berdasarkan tempat kelahiran, tanpa memandang kewarganegaraan orang tua."},
+                        {"text": "Status kewarganegaraan ditentukan berdasarkan perkawinan.", "Tr": false, "P8": "Prinsip ini adalah naturalisasi karena perkawinan."},
+                        {"text": "Status kewarganegaraan ditentukan berdasarkan domisili tempat tinggal.", "Tr": false, "P8": "Domisili tidak menjadi faktor utama penentuan kewarganegaraan."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Prinsip otonomi daerah di Indonesia yang menekankan bahwa penyerahan wewenang kepada daerah harus diikuti dengan penyerahan sumber daya pendanaan, sarana dan prasarana, serta sumber daya manusia disebut...",
+                    "hint": "Fokus pada prinsip yang memastikan daerah memiliki kemampuan fiskal dan personel yang memadai untuk melaksanakan otonomi.",
+                    "HE": [
+                        {"text": "Otonomi riil", "Tr": false, "P8": "Otonomi riil berarti pemberian otonomi yang nyata, bertanggung jawab, dan disesuaikan dengan potensi daerah."},
+                        {"text": "Otonomi luas", "Tr": false, "P8": "Otonomi luas berarti keleluasaan daerah mengatur urusan pemerintahan kecuali yang dikecualikan UU."},
+                        {"text": "Otonomi seimbang", "Tr": true, "P8": "Prinsip ini menekankan keseimbangan antara wewenang, pendanaan, dan tanggung jawab yang diberikan."},
+                        {"text": "Otonomi sentralistik", "Tr": false, "P8": "Otonomi tidak mungkin sentralistik karena sentralistik berarti pemusatan kekuasaan."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Hubungan antara Pembukaan UUD 1945 dengan Proklamasi Kemerdekaan adalah...",
+                    "hint": "Pikirkan mana yang merupakan pernyataan kemerdekaan secara historis dan mana yang merupakan pernyataan yang bersifat filosofis dan yuridis.",
+                    "HE": [
+                        {"text": "Proklamasi adalah perpanjangan tangan Pembukaan UUD 145.", "Tr": false, "P8": "Proklamasi terjadi lebih dahulu secara waktu, dan Pembukaan UUD 1945 adalah penjabaran formal Proklamasi."},
+                        {"text": "Pembukaan UUD 1945 merupakan penjabaran formal dari Proklamasi Kemerdekaan.", "Tr": true, "P8": "Proklamasi adalah pernyataan kemerdekaan, sedangkan Pembukaan UUD 1945 memberikan pertanggungjawaban, rincian, dan penetapan dasar negara dan tujuan negara."},
+                        {"text": "Keduanya tidak memiliki hubungan yang signifikan dan berdiri sendiri.", "Tr": false, "P8": "Keduanya sangat erat kaitannya dan tidak dapat dipisahkan secara ideologis dan historis."},
+                        {"text": "Pembukaan UUD 1945 adalah ringkasan dari isi Proklamasi Kemerdekaan.", "Tr": false, "P8": "Pembukaan lebih dari sekadar ringkasan; ia adalah norma fundamental negara."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Lembaga negara Komisi Yudisial (KY) memiliki wewenang utama untuk...",
+                    "hint": "Wewenang lembaga ini fokus pada etika dan integritas profesi hakim.",
+                    "HE": [
+                        {"text": "Menguji undang-undang terhadap UUD 1945.", "Tr": false, "P8": "Ini adalah wewenang Mahkamah Konstitusi (MK)."},
+                        {"text": "Menjaga dan menegakkan kehormatan, keluhuran martabat, serta perilaku hakim.", "Tr": true, "P8": "Ini adalah wewenang pokok KY, termasuk mengusulkan pengangkatan Hakim Agung."},
+                        {"text": "Memberikan pertimbangan kepada Presiden dalam hal pemberian grasi dan rehabilitasi.", "Tr": false, "P8": "Ini adalah salah satu wewenang Mahkamah Agung (MA) dan Dewan Perwakilan Rakyat (DPR)."},
+                        {"text": "Memutuskan sengketa kewenangan antar lembaga negara.", "Tr": false, "P8": "Ini adalah wewenang Mahkamah Konstitusi (MK)."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Dalam Ketahanan Nasional, konsep yang menyebutkan bahwa seluruh aspek kehidupan bangsa harus berada dalam kesatuan yang utuh, bulat, dan menyeluruh, disebut asas...",
+                    "hint": "Cari kata yang berarti 'menyatu' atau 'terpadu' dalam konteks filosofi negara.",
+                    "HE": [
+                        {"text": "Asas Mawas ke Dalam dan Mawas ke Luar", "Tr": false, "P8": "Ini adalah asas yang mengatur sikap dan cara pandang, bukan kesatuan aspek."},
+                        {"text": "Asas Kekeluargaan", "Tr": false, "P8": "Asas yang mencerminkan musyawarah dan gotong royong."},
+                        {"text": "Asas Manunggal", "Tr": true, "P8": "Asas Manunggal (menyatu) berarti Ketahanan Nasional mencakup semua aspek kehidupan (Astagatra) secara utuh, bulat, dan terpadu."},
+                        {"text": "Asas Konsultatif", "Tr": false, "P8": "Asas yang berkaitan dengan hubungan konsultatif antar lembaga."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Sistem peradilan di Indonesia yang menangani sengketa hasil Pemilihan Umum (Pemilu) atau Pilkada adalah...",
+                    "hint": "Lembaga ini dibentuk setelah amandemen UUD 1945 dan memiliki peran penting dalam menjamin konstitusionalitas hukum dan Pemilu.",
+                    "HE": [
+                        {"text": "Mahkamah Agung (MA)", "Tr": false, "P8": "MA menguji peraturan di bawah UU terhadap UU."},
+                        {"text": "Komisi Pemilihan Umum (KPU)", "Tr": false, "P8": "KPU adalah penyelenggara Pemilu, bukan lembaga peradilan."},
+                        {"text": "Mahkamah Konstitusi (MK)", "Tr": true, "P8": "MK memiliki wewenang memutus perselisihan tentang hasil Pemilu dan Pilkada."},
+                        {"text": "Pengadilan Tata Usaha Negara (PTUN)", "Tr": false, "P8": "PTUN menangani sengketa tata usaha negara, namun sengketa hasil Pemilu adalah wewenang khusus MK."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Salah satu unsur pokok negara yang tidak boleh hilang dan merupakan tempat bagi rakyat dan pemerintahan melaksanakan kedaulatan adalah...",
+                    "hint": "Unsur ini mendefinisikan batas-batas fisik tempat negara tersebut berdiri.",
+                    "HE": [
+                        {"text": "Kedaulatan", "Tr": false, "P8": "Kedaulatan adalah kekuasaan tertinggi, bukan wilayah/tempat."},
+                        {"text": "Rakyat", "Tr": false, "P8": "Rakyat adalah warga negara yang mendiami wilayah, bukan wilayahnya."},
+                        {"text": "Wilayah", "Tr": true, "P8": "Wilayah adalah salah satu unsur mutlak negara yang mencakup darat, laut, dan udara."},
+                        {"text": "Pemerintahan yang berdaulat", "Tr": false, "P8": "Pemerintahan adalah pelaksana kedaulatan, bukan wilayahnya."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Landasan ideil bangsa Indonesia, yang merupakan pandangan hidup dan falsafah bangsa, adalah...",
+                    "hint": "Landasan ini adalah sumber dari segala sumber hukum dan nilai, serta menjadi pandangan hidup bangsa.",
+                    "HE": [
+                        {"text": "Proklamasi Kemerdekaan 17 Agustus 1945", "Tr": false, "P8": "Proklamasi adalah landasan historis."},
+                        {"text": "Pancasila", "Tr": true, "P8": "Pancasila adalah landasan ideil (cita-cita/ideologi) yang menjadi dasar falsafah dan pandangan hidup bangsa."},
+                        {"text": "UUD 1945", "Tr": false, "P8": "UUD 1945 adalah landasan konstitusional (yuridis)."},
+                        {"text": "Bhinneka Tunggal Ika", "Tr": false, "P8": "Bhinneka Tunggal Ika adalah landasan sosiologis dan semboyan persatuan."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Salah satu contoh ancaman di bidang ideologi terhadap NKRI yang berpotensi menyasar kalangan pemuda/siswa SMK adalah...",
+                    "hint": "Fokus pada ancaman yang menyerang keyakinan dan dasar negara.",
+                    "HE": [
+                        {"text": "Perdagangan narkoba internasional.", "Tr": false, "P8": "Ini adalah ancaman di bidang sosial-budaya dan keamanan."},
+                        {"text": "Gerakan separatis bersenjata di wilayah perbatasan.", "Tr": false, "P8": "Ini adalah ancaman di bidang militer/politik."},
+                        {"text": "Penyebaran paham radikalisme/ekstremisme yang anti-Pancasila melalui media sosial.", "Tr": true, "P8": "Paham radikalisme/ekstremisme yang bertentangan dengan Pancasila adalah ancaman ideologi, yang kini banyak disebarkan melalui media digital kepada kaum muda."},
+                        {"text": "Persaingan produk impor dengan produk lokal.", "Tr": false, "P8": "Ini adalah ancaman di bidang ekonomi."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Nilai-nilai PKN yang paling relevan untuk diterapkan oleh siswa SMK di dunia kerja yang menuntut ketepatan waktu dan hasil adalah...",
+                    "hint": "Cari dua nilai yang terkait dengan etos kerja, profesionalisme, dan kejujuran.",
+                    "HE": [
+                        {"text": "Sikap individualis dan liberalis.", "Tr": false, "P8": "Sikap ini bertentangan dengan nilai-nilai Pancasila yang mengutamakan persatuan dan tanggung jawab sosial."},
+                        {"text": "Disiplin dan Integritas", "Tr": true, "P8": "Disiplin (ketepatan waktu) dan Integritas (kejujuran/tanggung jawab) adalah nilai-nilai kunci yang sangat penting di dunia kerja."},
+                        {"text": "Konsumerisme dan hedonisme.", "Tr": false, "P8": "Sikap ini bertentangan dengan etos kerja dan nilai-nilai ekonomis yang produktif."},
+                        {"text": "Kepentingan pribadi di atas kepentingan perusahaan.", "Tr": false, "P8": "Sikap ini bertentangan dengan loyalitas dan etika kerja."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Pemerintah daerah tidak memiliki hak untuk membuat Peraturan Daerah (Perda).",
+                    "hint": "Coba ingat kembali pengertian dari 'otonomi daerah' dan wewenang yang menyertainya.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Pemerintah daerah memiliki hak, bahkan wajib, untuk membuat Perda sebagai implementasi otonomi daerah, sesuai dengan UU tentang Pemerintahan Daerah."},
+                        {"text": "Salah", "Tr": true, "P8": "Pemerintah daerah memiliki hak, bahkan wajib, untuk membuat Perda sebagai implementasi otonomi daerah, sesuai dengan UU tentang Pemerintahan Daerah."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Konsep Ketahanan Nasional bersifat statis, tidak mengikuti perkembangan zaman.",
+                    "hint": "Apakah kekuatan sebuah bangsa harus tetap sama atau beradaptasi seiring waktu?",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Ketahanan Nasional bersifat dinamis, yang berarti harus terus dikembangkan dan disesuaikan dengan kondisi lingkungan strategis internal maupun eksternal yang terus berubah."},
+                        {"text": "Salah", "Tr": true, "P8": "Ketahanan Nasional bersifat dinamis, yang berarti harus terus dikembangkan dan disesuaikan dengan kondisi lingkungan strategis internal maupun eksternal yang terus berubah."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Setiap warga negara berhak dan wajib ikut serta dalam upaya pembelaan negara.",
+                    "hint": "Pikirkan tentang dasar hukum peran serta warga negara dalam pertahanan dan keamanan negara.",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "Hal ini diatur secara eksplisit dalam Pasal 27 Ayat (3) UUD 1945."},
+                        {"text": "Salah", "Tr": false, "P8": "Hal ini diatur secara eksplisit dalam Pasal 27 Ayat (3) UUD 1945."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Demokrasi Pancasila mengutamakan musyawarah untuk mencapai mufakat dalam pengambilan keputusan.",
+                    "hint": "Perhatikan perbedaan antara Demokrasi Pancasila dengan sistem demokrasi liberal.",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "Musyawarah mufakat adalah ciri khas dan prinsip utama Demokrasi Pancasila yang membedakannya dari demokrasi Barat yang berorientasi pada voting."},
+                        {"text": "Salah", "Tr": false, "P8": "Musyawarah mufakat adalah ciri khas dan prinsip utama Demokrasi Pancasila yang membedakannya dari demokrasi Barat yang berorientasi pada voting."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Dana Alokasi Umum (DAU) merupakan salah satu sumber utama Pendapatan Asli Daerah (PAD).",
+                    "hint": "DAU berasal dari APBN, sementara PAD adalah pendapatan yang dikumpulkan oleh daerah itu sendiri.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "DAU adalah Dana Perimbangan yang dialokasikan dari APBN kepada daerah. PAD adalah pendapatan yang bersumber dari daerah sendiri (pajak daerah, retribusi, hasil pengelolaan kekayaan daerah, dll.)."},
+                        {"text": "Salah", "Tr": true, "P8": "DAU adalah Dana Perimbangan yang dialokasikan dari APBN kepada daerah. PAD adalah pendapatan yang bersumber dari daerah sendiri (pajak daerah, retribusi, hasil pengelolaan kekayaan daerah, dll.)."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Wawasan Nusantara berfungsi sebagai pedoman untuk mencapai tujuan nasional bangsa.",
+                    "hint": "Wawasan Nusantara adalah cara pandang yang mengarahkan semua upaya untuk mencapai cita-cita bangsa.",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "Wawasan Nusantara adalah pedoman, motivasi, dan dorongan bagi bangsa dalam menentukan segala kebijakan dan tindakan, terutama yang berkaitan dengan geografis dan keutuhan bangsa, untuk mencapai tujuan nasional."},
+                        {"text": "Salah", "Tr": false, "P8": "Wawasan Nusantara adalah pedoman, motivasi, dan dorongan bagi bangsa dalam menentukan segala kebijakan dan tindakan, terutama yang berkaitan dengan geografis dan keutuhan bangsa, untuk mencapai tujuan nasional."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Asas *presumption of innocence* berarti seseorang dianggap bersalah sebelum ada keputusan pengadilan yang berkekuatan hukum tetap.",
+                    "hint": "Prinsip ini adalah perlindungan dasar bagi tertuduh dalam sistem peradilan yang adil.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Asas *presumption of innocence* (praduga tak bersalah) berarti seseorang harus dianggap tidak bersalah sampai ada putusan pengadilan yang membuktikan sebaliknya."},
+                        {"text": "Salah", "Tr": true, "P8": "Asas *presumption of innocence* (praduga tak bersalah) berarti seseorang harus dianggap tidak bersalah sampai ada putusan pengadilan yang membuktikan sebaliknya."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Kewajiban bagi siswa SMK untuk mematuhi tata tertib sekolah adalah wujud nyata dari ketaatan pada hukum nasional.",
+                    "hint": "Pikirkan hubungan antara peraturan kecil (sekolah) dan peraturan besar (negara).",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "Tata tertib sekolah adalah bagian dari peraturan yang berlaku dan mematuhinya adalah bentuk awal dari ketaatan pada hukum yang lebih tinggi (UU dan UUD)."},
+                        {"text": "Salah", "Tr": false, "P8": "Tata tertib sekolah adalah bagian dari peraturan yang berlaku dan mematuhinya adalah bentuk awal dari ketaatan pada hukum yang lebih tinggi (UU dan UUD)."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Kebebasan berpendapat merupakan hak yang tidak dapat dibatasi dalam kondisi apapun.",
+                    "hint": "Apakah hak kita boleh melanggar hak orang lain? Pikirkan tentang batas-batas kebebasan.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Semua hak asasi, termasuk berpendapat, dapat dibatasi oleh undang-undang demi menghormati hak orang lain dan untuk kepentingan ketertiban umum, moral, dan keamanan nasional, sesuai Pasal 28J Ayat (2) UUD 1945."},
+                        {"text": "Salah", "Tr": true, "P8": "Semua hak asasi, termasuk berpendapat, dapat dibatasi oleh undang-undang demi menghormati hak orang lain dan untuk kepentingan ketertiban umum, moral, dan keamanan nasional, sesuai Pasal 28J Ayat (2) UUD 1945."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Politik luar negeri bebas aktif Indonesia mengandung makna tidak adanya hubungan diplomatik dengan negara lain.",
+                    "hint": "Coba bedakan antara 'tidak memihak' dengan 'mengisolasi diri'.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Bebas aktif berarti tidak memihak (bebas) dan secara aktif menjalin kerja sama serta ikut serta dalam perdamaian dunia (aktif), yang justru membutuhkan hubungan diplomatik."},
+                        {"text": "Salah", "Tr": true, "P8": "Bebas aktif berarti tidak memihak (bebas) dan secara aktif menjalin kerja sama serta ikut serta dalam perdamaian dunia (aktif), yang justru membutuhkan hubungan diplomatik."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Semangat Bhinneka Tunggal Ika hanya berlaku untuk suku bangsa di Indonesia.",
+                    "hint": "Semboyan ini mengacu pada persatuan dalam keragaman Indonesia secara menyeluruh.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Bhinneka Tunggal Ika mencakup semua aspek keberagaman, termasuk agama, ras, bahasa, budaya, dan golongan, bukan hanya suku bangsa."},
+                        {"text": "Salah", "Tr": true, "P8": "Bhinneka Tunggal Ika mencakup semua aspek keberagaman, termasuk agama, ras, bahasa, budaya, dan golongan, bukan hanya suku bangsa."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Pancasila disahkan sebagai dasar negara pada tanggal 18 Agustus 1945.",
+                    "hint": "Tanggal ini adalah hari setelah Proklamasi, saat Panitia Persiapan Kemerdekaan Indonesia (PPKI) mengadakan sidang pertamanya.",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "Pada tanggal tersebut, PPKI mengesahkan UUD 1945 yang di dalamnya terdapat Pembukaan yang memuat Pancasila sebagai dasar negara."},
+                        {"text": "Salah", "Tr": false, "P8": "Pada tanggal tersebut, PPKI mengesahkan UUD 1945 yang di dalamnya terdapat Pembukaan yang memuat Pancasila sebagai dasar negara."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Kekuasaan kehakiman di Indonesia dipegang oleh Presiden.",
+                    "hint": "Lembaga apa yang bertugas menjalankan fungsi peradilan di Indonesia?",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Kekuasaan kehakiman di Indonesia dipegang oleh Mahkamah Agung (MA) dan Mahkamah Konstitusi (MK), sesuai prinsip Trias Politica (pemisahan kekuasaan)."},
+                        {"text": "Salah", "Tr": true, "P8": "Kekuasaan kehakiman di Indonesia dipegang oleh Mahkamah Agung (MA) dan Mahkamah Konstitusi (MK), sesuai prinsip Trias Politica (pemisahan kekuasaan)."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Desentralisasi adalah penyerahan urusan pemerintahan oleh pemerintah pusat kepada daerah otonom.",
+                    "hint": "Coba bedakan antara desentralisasi, dekonsentrasi, dan tugas pembantuan.",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "Desentralisasi secara definisi adalah penyerahan kewenangan pemerintahan dari pusat kepada daerah otonom (otonomi daerah)."},
+                        {"text": "Salah", "Tr": false, "P8": "Desentralisasi secara definisi adalah penyerahan kewenangan pemerintahan dari pusat kepada daerah otonom (otonomi daerah)."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Salah satu hasil amandemen UUD 1945 adalah pembentukan Dewan Perwakilan Daerah (DPD).",
+                    "hint": "Lembaga ini secara khusus mewakili kepentingan daerah provinsi.",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "DPD dibentuk sebagai lembaga perwakilan daerah dan merupakan salah satu hasil amandemen UUD 1945 untuk memperkuat sistem bikameral dan perwakilan daerah."},
+                        {"text": "Salah", "Tr": false, "P8": "DPD dibentuk sebagai lembaga perwakilan daerah dan merupakan salah satu hasil amandemen UUD 1945 untuk memperkuat sistem bikameral dan perwakilan daerah."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "MPR adalah satu-satunya lembaga yang memiliki hak *impeachment* terhadap Presiden.",
+                    "hint": "Coba ingat kembali peran DPR dan MK dalam proses pemberhentian Presiden.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Meskipun MPR yang memutuskan pemberhentian, proses awalnya melibatkan DPR (mengajukan usul) dan Mahkamah Konstitusi (memeriksa, mengadili, dan memutus)."},
+                        {"text": "Salah", "Tr": true, "P8": "Meskipun MPR yang memutuskan pemberhentian, proses awalnya melibatkan DPR (mengajukan usul) dan Mahkamah Konstitusi (memeriksa, mengadili, dan memutus)."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Adanya partai politik adalah indikator utama keberhasilan sistem otoriter.",
+                    "hint": "Dalam sistem apa kebebasan berorganisasi dan bersaing secara politik sangat dijunjung tinggi?",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Partai politik adalah salah satu pilar utama dan indikator keberhasilan sistem demokrasi, yang menjamin kebebasan berserikat dan berpendapat."},
+                        {"text": "Salah", "Tr": true, "P8": "Partai politik adalah salah satu pilar utama dan indikator keberhasilan sistem demokrasi, yang menjamin kebebasan berserikat dan berpendapat."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Peran Lembaga Swadaya Masyarakat (LSM) dalam pengawasan pemerintahan adalah tidak relevan dan diabaikan.",
+                    "hint": "LSM adalah bagian dari masyarakat sipil yang berfungsi sebagai mata dan telinga publik.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "LSM memainkan peran penting sebagai kontrol sosial (civil society) dalam mengawasi jalannya pemerintahan dan menyuarakan kepentingan masyarakat."},
+                        {"text": "Salah", "Tr": true, "P8": "LSM memainkan peran penting sebagai kontrol sosial (civil society) dalam mengawasi jalannya pemerintahan dan menyuarakan kepentingan masyarakat."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Hak asasi di bidang ekonomi, contohnya adalah hak untuk mendapatkan pendidikan.",
+                    "hint": "Fokus pada kategori hak yang berkaitan dengan kebutuhan dasar manusia, selain dari pendidikan.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Hak untuk mendapatkan pendidikan termasuk dalam Hak Asasi Sosial dan Budaya, sementara Hak Asasi Ekonomi mencakup kepemilikan, pekerjaan, dan jaminan sosial."},
+                        {"text": "Salah", "Tr": true, "P8": "Hak untuk mendapatkan pendidikan termasuk dalam Hak Asasi Sosial dan Budaya, sementara Hak Asasi Ekonomi mencakup kepemilikan, pekerjaan, dan jaminan sosial."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Tata cara pelaksanaan amandemen UUD 1945 adalah hak prerogatif Presiden.",
+                    "hint": "Ingat kembali lembaga negara yang memiliki kekuasaan tertinggi dalam mengubah UUD.",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Tata cara amandemen UUD 1945 adalah wewenang penuh Majelis Permusyawaratan Rakyat (MPR), yang diatur dalam Pasal 3 UUD 1945, bukan hak prerogatif Presiden."},
+                        {"text": "Salah", "Tr": true, "P8": "Tata cara amandemen UUD 1945 adalah wewenang penuh Majelis Permusyawaratan Rakyat (MPR), yang diatur dalam Pasal 3 UUD 1945, bukan hak prerogatif Presiden."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Yang dimaksud dengan hak prerogatif Presiden adalah...",
+                    "hint": "Pikirkan tentang hak-hak khusus yang merupakan kekuasaan tertinggi di bidang eksekutif/hukum.",
+                    "HE": [
+                        {"text": "Hak Presiden untuk mengajukan Rancangan Undang-Undang.", "Tr": false, "P8": "Presiden berbagi hak ini dengan DPR."},
+                        {"text": "Hak Presiden untuk membuat Peraturan Pemerintah Pengganti Undang-Undang (Perpu).", "Tr": false, "P8": "Ini adalah hak yang diatur dalam UUD, namun bukan definisi dari hak prerogatif."},
+                        {"text": "Hak dan wewenang istimewa yang dimiliki oleh Presiden tanpa perlu campur tangan lembaga lain.", "Tr": true, "P8": "Hak prerogatif adalah hak istimewa yang melekat pada jabatan kepala negara, seperti memberikan grasi, amnesti, abolisi, dan rehabilitasi."},
+                        {"text": "Hak Presiden untuk memimpin sidang kabinet.", "Tr": false, "P8": "Ini adalah bagian dari tugas Presiden sebagai Kepala Pemerintahan, bukan hak istimewa yang dimaksud."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Pemisahan kekuasaan antara legislatif, eksekutif, dan yudikatif di Indonesia merupakan implementasi dari teori...",
+                    "hint": "Konsep ini pertama kali dipopulerkan oleh Montesquieu.",
+                    "HE": [
+                        {"text": "Kedaulatan Rakyat", "Tr": false, "P8": "Kedaulatan Rakyat adalah asal muasal kekuasaan, bukan pembagian kekuasaan."},
+                        {"text": "Trias Politica", "Tr": true, "P8": "Trias Politica adalah konsep pembagian kekuasaan menjadi tiga cabang (legislatif, eksekutif, yudikatif) yang bertujuan mencegah tirani."},
+                        {"text": "Negara Kesejahteraan", "Tr": false, "P8": "Negara Kesejahteraan adalah konsep tujuan negara, bukan pembagian kekuasaan."},
+                        {"text": "Paternalisme", "Tr": false, "P8": "Paternalisme adalah sistem yang mengedepankan kepemimpinan seperti ayah kepada anak."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Pasal yang mengatur tentang hak setiap orang untuk mengembangkan diri melalui pemenuhan kebutuhan dasarnya dan berhak mendapat pendidikan adalah...",
+                    "hint": "Fokus pada Bab XA (HAM) dan pasal yang mengatur hak pengembangan diri.",
+                    "HE": [
+                        {"text": "Pasal 27 Ayat (1)", "Tr": false, "P8": "Mengatur tentang kedudukan yang sama di depan hukum."},
+                        {"text": "Pasal 28C Ayat (1)", "Tr": true, "P8": "Pasal ini secara eksplisit mengatur hak setiap orang untuk mengembangkan diri dan mendapat pendidikan, yang merupakan Hak Asasi Sosial Budaya."},
+                        {"text": "Pasal 29 Ayat (2)", "Tr": false, "P8": "Mengatur tentang kebebasan beragama."},
+                        {"text": "Pasal 30 Ayat (1)", "Tr": false, "P8": "Mengatur tentang hak dan kewajiban warga negara dalam usaha pertahanan dan keamanan negara."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Batas wilayah laut yang diukur sejauh 12 mil laut dari garis pantai terluar yang merupakan kedaulatan penuh Indonesia disebut...",
+                    "hint": "Wilayah ini dianggap sebagai bagian integral dari kedaulatan negara, seperti halnya daratan.",
+                    "HE": [
+                        {"text": "Zona Ekonomi Eksklusif (ZEE)", "Tr": false, "P8": "ZEE adalah 200 mil laut, di mana Indonesia memiliki hak berdaulat atas sumber daya alamnya."},
+                        {"text": "Landas Kontinen", "Tr": false, "P8": "Landas Kontinen adalah dasar laut dan tanah di bawahnya, bukan batas laut 12 mil."},
+                        {"text": "Laut Teritorial", "Tr": true, "P8": "Laut Teritorial adalah batas wilayah laut sejauh 12 mil laut, dan di dalamnya Indonesia memiliki kedaulatan penuh."},
+                        {"text": "Laut Bebas", "Tr": false, "P8": "Laut Bebas adalah wilayah laut di luar batas kedaulatan negara manapun."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Proses pembentukan Peraturan Perundang-undangan di Indonesia dilakukan oleh pemerintah pusat dan pemerintah daerah.",
+                    "hint": "Ingat bahwa daerah memiliki hak otonomi untuk mengatur rumah tangganya sendiri.",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "Pemerintah pusat membuat UU, PP, Perpres, sementara pemerintah daerah membuat Perda Provinsi dan Perda Kabupaten/Kota."},
+                        {"text": "Salah", "Tr": false, "P8": "Pemerintah pusat membuat UU, PP, Perpres, sementara pemerintah daerah membuat Perda Provinsi dan Perda Kabupaten/Kota."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Dalam sistem pertahanan dan keamanan rakyat semesta (SISHANKAMRATA), TNI berfungsi sebagai komponen pendukung.",
+                    "hint": "Komponen mana yang memiliki kemampuan tempur paling utama dan siap digunakan?",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "TNI berfungsi sebagai komponen utama, sementara Polri berfungsi sebagai komponen pendukung, dan rakyat sebagai komponen cadangan dan pendukung."},
+                        {"text": "Salah", "Tr": true, "P8": "TNI berfungsi sebagai komponen utama, sementara Polri berfungsi sebagai komponen pendukung, dan rakyat sebagai komponen cadangan dan pendukung."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Lembaga tertinggi yang mengesahkan perjanjian internasional yang dibuat oleh pemerintah Indonesia adalah...",
+                    "hint": "Pengesahan perjanjian penting merupakan bentuk pengawasan dari lembaga yang memegang fungsi legislasi.",
+                    "HE": [
+                        {"text": "Mahkamah Agung (MA)", "Tr": false, "P8": "MA adalah lembaga peradilan, bukan pengesahan perjanjian."},
+                        {"text": "Dewan Perwakilan Rakyat (DPR)", "Tr": true, "P8": "DPR memberikan persetujuan atau pengesahan (ratifikasi) terhadap perjanjian internasional yang penting, sesuai dengan Pasal 11 UUD 1945."},
+                        {"text": "Kementerian Luar Negeri", "Tr": false, "P8": "Kementerian Luar Negeri adalah pelaksana kebijakan, bukan pengesah perjanjian."},
+                        {"text": "Presiden", "Tr": false, "P8": "Presiden yang mengadakan perjanjian, namun memerlukan persetujuan DPR untuk yang berdampak luas."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Nilai-nilai ideal Pancasila adalah nilai-nilai yang bersifat tetap dan tidak berubah, yang terkandung dalam kelima sila Pancasila.",
+                    "hint": "Pikirkan tentang esensi paling dasar dari Pancasila, apakah ia bisa berubah seiring waktu?",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "Nilai ideal atau nilai dasar adalah hakikat dari sila-sila Pancasila (seperti Ketuhanan, Kemanusiaan, dll.) yang bersifat universal dan tetap, sementara nilai instrumentalnya bersifat dinamis."},
+                        {"text": "Salah", "Tr": false, "P8": "Nilai ideal atau nilai dasar adalah hakikat dari sila-sila Pancasila (seperti Ketuhanan, Kemanusiaan, dll.) yang bersifat universal dan tetap, sementara nilai instrumentalnya bersifat dinamis."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Peraturan perundang-undangan di bawah Undang-Undang harus diuji (judicial review) oleh Mahkamah Konstitusi (MK).",
+                    "hint": "Lembaga peradilan mana yang memiliki kewenangan menguji UU terhadap UUD, dan lembaga peradilan mana yang menguji peraturan di bawah UU terhadap UU?",
+                    "HE": [
+                        {"text": "Benar", "Tr": false, "P8": "Pengujian peraturan di bawah UU terhadap UU adalah wewenang Mahkamah Agung (MA), bukan MK."},
+                        {"text": "Salah", "Tr": true, "P8": "Pengujian peraturan di bawah UU terhadap UU adalah wewenang Mahkamah Agung (MA), bukan MK."}
+                    ]
+                },
+                {
+                    "ABa": 0,
+                    "question": "Sila 'Keadilan sosial bagi seluruh rakyat Indonesia' menekankan adanya keseimbangan antara hak dan kewajiban setiap warga negara.",
+                    "hint": "Sila terakhir ini berbicara tentang aspek kesejahteraan dan pemerataan dalam masyarakat.",
+                    "HE": [
+                        {"text": "Benar", "Tr": true, "P8": "Keadilan sosial mencakup keseimbangan hak dan kewajiban, sikap adil, menghormati hak orang lain, dan tidak bersifat pemerasan."},
+                        {"text": "Salah", "Tr": false, "P8": "Keadilan sosial mencakup keseimbangan hak dan kewajiban, sikap adil, menghormati hak orang lain, dan tidak bersifat pemerasan."}
+                    ]
+                }
+            ]
+        };
+        // --- AKHIR DATA KUIS ---
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedOption = null;
+        let quizQuestions = [];
+        // Status: 0 = untouched, 1 = incorrect, 2 = correct
+        let questionStatus = []; 
+
+        // Fungsi untuk membersihkan dan memformat data kuis
+        function formatQuizData(rawData) {
+            return rawData.Rk.map(q => ({
+                question: q.question,
+                hint: q.hint,
+                type: q.ABa,
+                options: q.HE.map(o => ({
+                    text: o.text,
+                    isCorrect: o.Tr,
+                    rationale: o.P8
+                }))
+            }));
+        }
+
+        // DOM Elements
+        const questionCard = document.getElementById('question-card');
+        const resultCard = document.getElementById('result-card');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const checkButton = document.getElementById('check-button');
+        const nextButton = document.getElementById('next-button');
+        const rationaleContainer = document.getElementById('rationale-container');
+        const rationaleText = document.getElementById('rationale-text');
+        const rationaleTitle = document.getElementById('rationale-title');
+        const hintContainer = document.getElementById('hint-container');
+        const hintText = document.getElementById('hint-text');
+        const currentQNum = document.getElementById('current-question-number');
+        const totalQNumTop = document.getElementById('total-questions');
+        const totalQNumBottom = document.getElementById('total-questions-bottom');
+        const questionIndexContainer = document.getElementById('question-index-container');
+
+        // Fungsi untuk berpindah ke soal tertentu
+        function jumpToQuestion(index) {
+            currentQuestionIndex = index;
+            loadQuestion();
+        }
+        
+        // Fungsi untuk merender tombol navigasi
+        function renderNavigation() {
+            questionIndexContainer.innerHTML = '';
+            quizQuestions.forEach((q, index) => {
+                const btn = document.createElement('button');
+                btn.textContent = index + 1;
+                btn.className = 'nav-btn';
+                btn.onclick = () => jumpToQuestion(index);
+
+                // Terapkan status warna
+                if (index === currentQuestionIndex) {
+                    btn.classList.add('nav-active');
+                } else if (questionStatus[index] === 2) {
+                    btn.classList.add('nav-correct');
+                } else if (questionStatus[index] === 1) {
+                    btn.classList.add('nav-incorrect');
+                }
+                
+                questionIndexContainer.appendChild(btn);
+            });
+        }
+
+
+        function loadQuestion() {
+            // Tampilkan pertanyaan saat ini
+            const q = quizQuestions[currentQuestionIndex];
+            
+            currentQNum.textContent = currentQuestionIndex + 1;
+            totalQNumTop.textContent = quizQuestions.length;
+            totalQNumBottom.textContent = quizQuestions.length;
+
+            questionText.innerHTML = q.question;
+            optionsContainer.innerHTML = '';
+            rationaleContainer.classList.add('hidden');
+            checkButton.disabled = true;
+            nextButton.disabled = false; // Next button selalu aktif kecuali di soal terakhir yang belum dijawab
+            selectedOption = null;
+
+            // Atur tombol berikutnya di soal terakhir
+            if (currentQuestionIndex === quizQuestions.length - 1 && questionStatus[currentQuestionIndex] !== 0) {
+                 nextButton.textContent = 'Lihat Hasil';
+            } else if (currentQuestionIndex === quizQuestions.length - 1) {
+                nextButton.textContent = 'Selesai';
+                nextButton.disabled = true; // Non-aktifkan jika belum dijawab
+            } else {
+                 nextButton.textContent = 'Soal Berikutnya';
+            }
+
+            // Atur hint
+            if (q.hint && q.hint.trim() !== "") {
+                hintText.innerHTML = q.hint;
+                hintContainer.classList.remove('hidden');
+            } else {
+                 hintContainer.classList.add('hidden');
+            }
+
+            // Render options
+            const questionIsAnswered = questionStatus[currentQuestionIndex] !== 0;
+
+            q.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.innerHTML = `<span class="font-bold mr-2">${String.fromCharCode(65 + index)}.</span> ${option.text}`;
+                
+                let buttonClasses = 'option-button w-full text-left p-3 border-2 rounded-lg transition duration-150';
+                
+                if (questionIsAnswered) {
+                    // Jika sudah dijawab, tampilkan feedback
+                    buttonClasses += ' cursor-default disabled:opacity-100';
+                    if (option.isCorrect) {
+                        buttonClasses += ' correct border-green-500';
+                    } else if (index === q.selectedAnswer) { // q.selectedAnswer akan diisi di checkAnswer
+                        buttonClasses += ' incorrect border-red-500';
+                    } else {
+                        buttonClasses += ' border-gray-200 text-gray-400';
+                    }
+                    button.disabled = true;
+                    // Tampilkan rationale jika sudah dijawab
+                    rationaleContainer.classList.remove('hidden');
+                    rationaleText.innerHTML = q.options[q.correctAnswerIndex].rationale;
+                    rationaleTitle.textContent = questionStatus[currentQuestionIndex] === 2 ? "Jawaban Tepat! 🎉" : "Jawaban Salah. 😔";
+                    rationaleContainer.classList.remove('border-red-500', 'bg-red-50', 'border-green-500', 'bg-green-50');
+                    rationaleContainer.classList.add(questionStatus[currentQuestionIndex] === 2 ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50');
+
+                    // Pastikan tombol Next aktif
+                    nextButton.disabled = false;
+                    checkButton.disabled = true;
+
+                } else {
+                    // Jika belum dijawab, aktifkan interaksi
+                    buttonClasses += ' border-gray-200 text-gray-700 hover:bg-f0f4f8';
+                    button.addEventListener('click', () => {
+                        // Reset selected state on all options
+                        optionsContainer.querySelectorAll('.option-button').forEach(btn => {
+                            btn.classList.remove('selected', 'border-blue-500');
+                        });
+                        
+                        // Set selected state on clicked option
+                        button.classList.add('selected', 'border-blue-500');
+                        selectedOption = index;
+                        checkButton.disabled = false;
+                    });
+                }
+
+                button.className = buttonClasses;
+                button.setAttribute('data-index', index);
+                optionsContainer.appendChild(button);
+            });
+            
+            renderNavigation(); // Render navigasi setiap kali soal dimuat
+        }
+
+        function checkAnswer() {
+            if (selectedOption === null) return;
+
+            checkButton.disabled = true;
+            nextButton.disabled = false;
+            hintContainer.classList.add('hidden');
+
+            const q = quizQuestions[currentQuestionIndex];
+            const isCorrect = q.options[selectedOption].isCorrect;
+            
+            // Temukan indeks jawaban yang benar dan simpan jawaban yang dipilih
+            const correctAnswerIndex = q.options.findIndex(opt => opt.isCorrect);
+            quizQuestions[currentQuestionIndex].selectedAnswer = selectedOption;
+            quizQuestions[currentQuestionIndex].correctAnswerIndex = correctAnswerIndex;
+
+            // Update Status Kuis
+            if (isCorrect) {
+                score++;
+                questionStatus[currentQuestionIndex] = 2; // Correct
+            } else {
+                questionStatus[currentQuestionIndex] = 1; // Incorrect
+            }
+            
+            // Re-render soal untuk menampilkan feedback dan rationale
+            loadQuestion(); 
+            // Setelah loadQuestion() dijalankan, rationale dan highlight sudah muncul
+            
+            // Pastikan tombol next tetap aktif dan teks disesuaikan untuk soal terakhir
+            if (currentQuestionIndex === quizQuestions.length - 1) {
+                nextButton.textContent = 'Lihat Hasil';
+            } else {
+                nextButton.textContent = 'Soal Berikutnya';
+            }
+        }
+
+        function nextQuestion() {
+            // Jika tombol 'Lihat Hasil' diklik
+            if (currentQuestionIndex === quizQuestions.length - 1 && questionStatus[currentQuestionIndex] !== 0) {
+                 showResult();
+                 return;
+            } 
+            
+            // Pindah ke soal berikutnya yang belum dijawab, atau secara sekuensial
+            let nextIndex = currentQuestionIndex + 1;
+            while (nextIndex < quizQuestions.length && questionStatus[nextIndex] !== 0) {
+                nextIndex++;
+            }
+
+            if (nextIndex < quizQuestions.length) {
+                jumpToQuestion(nextIndex);
+            } else if (currentQuestionIndex < quizQuestions.length - 1) {
+                // Jika semua sudah dijawab tapi tombol diklik dari soal selain terakhir
+                jumpToQuestion(currentQuestionIndex + 1);
+            } else {
+                 showResult();
+            }
+        }
+
+        function showResult() {
+            questionCard.classList.add('hidden');
+            resultCard.classList.remove('hidden');
+
+            const finalScoreEl = document.getElementById('final-score');
+            const finalTotalEl = document.getElementById('final-total');
+            const resultEmojiEl = document.getElementById('result-emoji');
+
+            finalScoreEl.textContent = score;
+            finalTotalEl.textContent = quizQuestions.length;
+
+            const percentage = (score / quizQuestions.length) * 100;
+            if (percentage >= 80) {
+                resultEmojiEl.textContent = "🥳";
+            } else if (percentage >= 60) {
+                resultEmojiEl.textContent = "👍";
+            } else {
+                resultEmojiEl.textContent = "🧠"; // Perluas Belajar
+            }
+        }
+
+        // Initialization
+        window.onload = function() {
+            quizQuestions = formatQuizData(rawQuizData);
+            // Initialize status array: 0 for all questions
+            questionStatus = new Array(quizQuestions.length).fill(0); 
+
+            document.getElementById('loading').classList.add('hidden');
+            
+            if (quizQuestions.length > 0) {
+                questionCard.classList.remove('hidden');
+                checkButton.addEventListener('click', checkAnswer);
+                nextButton.addEventListener('click', nextQuestion);
+                loadQuestion();
+            } else {
+                document.getElementById('quiz-area').innerHTML = '<div class="card p-8 text-center text-red-600 font-semibold">Gagal memuat data kuis.</div>';
+            }
+        };
+
+    </script>
+</body>
+</html>
