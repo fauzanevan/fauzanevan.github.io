@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis PKn Interaktif - oleh pak ervan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .question-card {
+            transition: all 0.3s ease;
+        }
+        .option-button {
+            transition: all 0.2s ease;
+        }
+        .option-button:hover {
+            transform: translateY(-1px);
+        }
+        .correct {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .incorrect {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-full">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-indigo-800 mb-2">Simulasi Soal PKn TKA</h1>
+            <p class="text-gray-600 text-lg">Test Kemampuan Akademik - Pendidikan Kewarganegaraan - oleh D. Ervan Fauzan, S.Sos </p>
+            <div class="mt-4 bg-white rounded-lg p-4 shadow-md">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">Progress:</span>
+                    <!-- Dibuat dinamis oleh JS, akan menampilkan 0/50 -->
+                    <span class="text-sm font-medium text-indigo-600" id="progress-text">0/50</span> 
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="progress-bar bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full" id="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content with Sidebar -->
+        <div class="flex gap-6">
+            <!-- Question Navigation Sidebar -->
+            <aside class="w-64 bg-white rounded-xl shadow-lg p-6 h-fit sticky top-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">📋 Navigasi Soal</h3>
+                <div class="grid grid-cols-5 gap-2" id="question-nav">
+                    <!-- Navigation buttons will be generated here -->
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <div class="text-sm text-gray-600 mb-2">Keterangan:</div>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-gray-200 rounded"></div>
+                            <span>Belum dijawab</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-blue-500 rounded"></div>
+                            <span>Sedang aktif</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-green-500 rounded"></div>
+                            <span>Sudah dijawab</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Quiz Container -->
+            <main id="quiz-container" class="flex-1 bg-white rounded-xl shadow-lg p-8">
+                <!-- Questions will be loaded here -->
+            </main>
+        </div>
+
+        <!-- Results Container -->
+        <div id="results-container" class="hidden bg-white rounded-xl shadow-lg p-8 text-center">
+            <div class="mb-6">
+                <div class="text-6xl mb-4" id="result-emoji">🎉</div>
+                <h2 class="text-3xl font-bold text-indigo-800 mb-2">Kuis Selesai!</h2>
+                <div class="text-2xl font-semibold mb-4" id="final-score"></div>
+                <div class="text-lg text-gray-600 mb-6" id="score-message"></div>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-4 mb-8">
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600" id="correct-count">0</div>
+                    <div class="text-sm text-green-700">Benar</div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-red-600" id="incorrect-count">0</div>
+                    <div class="text-sm text-red-700">Salah</div>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600" id="percentage">0%</div>
+                    <div class="text-sm text-blue-700">Persentase</div>
+                </div>
+            </div>
+
+            <button onclick="restartQuiz()" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105">
+                🔄 Ulangi Kuis
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Mempertahankan 50 soal dengan menghapus 6 soal terakhir dari kategori HOTS
+        const questions = [
+            // Pilihan Ganda (30 soal)
+            {
+                type: 'multiple-choice',
+                question: 'Pancasila sebagai dasar negara Indonesia ditetapkan pada tanggal...',
+                options: ['17 Agustus 1945', '18 Agustus 1945', '1 Juni 1945', '22 Juni 1945'],
+                correct: 1,
+                explanation: 'Pancasila ditetapkan sebagai dasar negara pada 18 Agustus 1945 dalam sidang PPKI.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Sila pertama Pancasila adalah...',
+                options: ['Kemanusiaan yang adil dan beradab', 'Ketuhanan Yang Maha Esa', 'Persatuan Indonesia', 'Kerakyatan yang dipimpin oleh hikmat kebijaksanaan'],
+                correct: 1,
+                explanation: 'Sila pertama Pancasila adalah "Ketuhanan Yang Maha Esa".'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'UUD 1945 telah mengalami amandemen sebanyak...',
+                options: ['3 kali', '4 kali', '5 kali', '2 kali'],
+                correct: 1,
+                explanation: 'UUD 1945 telah diamandemen 4 kali (1999, 2000, 2001, 2002).'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Lembaga negara yang berwenang mengubah UUD adalah...',
+                options: ['DPR', 'MPR', 'DPD', 'Presiden'],
+                correct: 1,
+                explanation: 'MPR memiliki wewenang untuk mengubah dan menetapkan UUD.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Sistem pemerintahan Indonesia menurut UUD 1945 adalah...',
+                options: ['Parlementer', 'Presidensial', 'Campuran', 'Federal'],
+                correct: 1,
+                explanation: 'Indonesia menganut sistem presidensial dimana presiden adalah kepala negara dan kepala pemerintahan.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Hak asasi manusia dalam UUD 1945 diatur dalam pasal...',
+                options: ['Pasal 27-34', 'Pasal 28A-28J', 'Pasal 25-30', 'Pasal 29-35'],
+                correct: 1,
+                explanation: 'HAM diatur dalam Pasal 28A sampai 28J UUD 1945 hasil amandemen kedua.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Pemilihan umum di Indonesia dilaksanakan setiap...',
+                options: ['4 tahun', '5 tahun', '6 tahun', '3 tahun'],
+                correct: 1,
+                explanation: 'Pemilu di Indonesia dilaksanakan setiap 5 tahun sekali.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Lembaga yang bertugas mengawasi pemilihan umum adalah...',
+                options: ['KPU', 'Bawaslu', 'DKPP', 'Panwaslu'],
+                correct: 1,
+                explanation: 'Bawaslu (Badan Pengawas Pemilu) bertugas mengawasi penyelenggaraan pemilu.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Bentuk negara Indonesia adalah...',
+                options: ['Federal', 'Kesatuan', 'Konfederasi', 'Serikat'],
+                correct: 1,
+                explanation: 'Indonesia adalah negara kesatuan yang terdiri dari daerah-daerah provinsi.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Kedaulatan rakyat dalam demokrasi Pancasila dilaksanakan menurut...',
+                options: ['UUD 1945', 'Pancasila', 'GBHN', 'Tap MPR'],
+                correct: 0,
+                explanation: 'Kedaulatan rakyat dilaksanakan menurut UUD 1945 sebagai hukum dasar negara.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Warga negara Indonesia yang berusia 17 tahun ke atas berhak...',
+                options: ['Dipilih', 'Memilih', 'Mencalonkan diri', 'Menjadi anggota partai'],
+                correct: 1,
+                explanation: 'WNI berusia 17 tahun ke atas atau sudah menikah berhak memilih dalam pemilu.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Lambang negara Indonesia adalah...',
+                options: ['Garuda Pancasila', 'Burung Garuda', 'Pancasila', 'Bhinneka Tunggal Ika'],
+                correct: 0,
+                explanation: 'Garuda Pancasila adalah lambang negara Indonesia yang melambangkan Pancasila.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Semboyan Bhinneka Tunggal Ika berasal dari bahasa...',
+                options: ['Sanskrit', 'Jawa Kuno', 'Latin', 'Arab'],
+                correct: 1,
+                explanation: 'Bhinneka Tunggal Ika berasal dari bahasa Jawa Kuno yang berarti berbeda-beda tetapi tetap satu.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Kewajiban warga negara yang paling utama adalah...',
+                options: ['Membayar pajak', 'Menjunjung hukum dan pemerintahan', 'Bela negara', 'Mengikuti pendidikan'],
+                correct: 1,
+                explanation: 'Kewajiban utama WNI adalah menjunjung tinggi hukum dan pemerintahan yang sah.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Otonomi daerah di Indonesia diatur dalam UU No...',
+                options: ['UU No. 22 Tahun 1999', 'UU No. 23 Tahun 2014', 'UU No. 32 Tahun 2004', 'UU No. 25 Tahun 2009'],
+                correct: 1,
+                explanation: 'Otonomi daerah saat ini diatur dalam UU No. 23 Tahun 2014 tentang Pemerintahan Daerah.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Partai politik di Indonesia minimal harus memiliki kepengurusan di...',
+                options: ['50% provinsi', '60% provinsi', '75% provinsi', '100% provinsi'],
+                correct: 2,
+                explanation: 'Partai politik harus memiliki kepengurusan di 75% provinsi untuk dapat ikut pemilu.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Mahkamah Konstitusi berwenang mengadili...',
+                options: ['Sengketa pemilu', 'Pelanggaran HAM', 'Pengujian UU terhadap UUD', 'Korupsi'],
+                correct: 2,
+                explanation: 'MK berwenang menguji UU terhadap UUD, memutus sengketa kewenangan lembaga negara, dan pembubaran partai politik.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Presiden dan Wakil Presiden dipilih dalam satu paket untuk masa jabatan...',
+                options: ['4 tahun', '5 tahun', '6 tahun', '7 tahun'],
+                correct: 1,
+                explanation: 'Presiden dan Wakil Presiden dipilih untuk masa jabatan 5 tahun dan dapat dipilih kembali untuk satu kali masa jabatan.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Komisi Pemberantasan Korupsi (KPK) dibentuk berdasarkan...',
+                options: ['UU No. 30 Tahun 2002', 'UU No. 31 Tahun 1999', 'UU No. 20 Tahun 2001', 'UU No. 28 Tahun 1999'],
+                correct: 0,
+                explanation: 'KPK dibentuk berdasarkan UU No. 30 Tahun 2002 tentang Komisi Pemberantasan Tindak Pidana Korupsi.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Dalam sistem checks and balances, lembaga yang mengawasi presiden adalah...',
+                options: ['MA', 'MPR', 'DPR', 'MK'],
+                correct: 2,
+                explanation: 'DPR memiliki fungsi pengawasan terhadap pelaksanaan pemerintahan oleh presiden.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Hak untuk mendapatkan pendidikan merupakan hak...',
+                options: ['Politik', 'Ekonomi', 'Sosial budaya', 'Sipil'],
+                correct: 2,
+                explanation: 'Hak pendidikan termasuk dalam kategori hak ekonomi, sosial, dan budaya (ekosob).'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Asas legalitas dalam hukum berarti...',
+                options: ['Semua orang sama di depan hukum', 'Tidak ada hukuman tanpa undang-undang', 'Hukum berlaku surut', 'Praduga tak bersalah'],
+                correct: 1,
+                explanation: 'Asas legalitas berarti tidak ada perbuatan yang dapat dipidana tanpa ada undang-undang yang mengaturnya terlebih dahulu.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Kewenangan untuk menyatakan perang dan damai dimiliki oleh...',
+                options: ['Presiden', 'DPR', 'MPR', 'TNI'],
+                correct: 1,
+                explanation: 'DPR memiliki kewenangan untuk menyatakan perang, membuat perdamaian dan perjanjian dengan negara lain.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Pemilihan kepala daerah (Pilkada) dilaksanakan setiap...',
+                options: ['4 tahun', '5 tahun', '6 tahun', '3 tahun'],
+                correct: 1,
+                explanation: 'Pilkada dilaksanakan setiap 5 tahun sekali bersamaan dengan pemilu nasional.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Lembaga negara yang bertugas memeriksa pengelolaan keuangan negara adalah...',
+                options: ['BPK', 'BPKP', 'Kemenkeu', 'DPR'],
+                correct: 0,
+                explanation: 'BPK (Badan Pemeriksa Keuangan) bertugas memeriksa pengelolaan dan tanggung jawab keuangan negara.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Prinsip demokrasi yang menjamin hak minoritas adalah...',
+                options: ['Majority rule', 'Minority rights', 'Popular sovereignty', 'Political equality'],
+                correct: 1,
+                explanation: 'Minority rights (hak minoritas) adalah prinsip demokrasi yang melindungi hak-hak kelompok minoritas.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Kebebasan pers di Indonesia dijamin dalam pasal...',
+                options: ['Pasal 28', 'Pasal 28E', 'Pasal 28F', 'Pasal 28G'],
+                correct: 2,
+                explanation: 'Kebebasan pers dijamin dalam Pasal 28F UUD 1945 tentang hak berkomunikasi dan memperoleh informasi.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Sistem multipartai di Indonesia dimulai pada era...',
+                options: ['Orde Lama', 'Orde Baru', 'Reformasi', 'Kemerdekaan'],
+                correct: 2,
+                explanation: 'Sistem multipartai yang sesungguhnya baru dimulai pada era Reformasi setelah 1998.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Komnas HAM dibentuk berdasarkan...',
+                options: ['UU No. 39 Tahun 1999', 'UU No. 26 Tahun 2000', 'Keppres No. 50 Tahun 1993', 'UU No. 40 Tahun 2008'],
+                correct: 0,
+                explanation: 'Komnas HAM dibentuk berdasarkan UU No. 39 Tahun 1999 tentang Hak Asasi Manusia.'
+            },
+            // Soal Pilihan Ganda ke-30:
+            {
+                type: 'multiple-choice',
+                question: 'Lembaga negara yang berwenang mengangkat dan memberhentikan hakim agung adalah...',
+                options: ['Mahkamah Agung', 'Komisi Yudisial', 'Dewan Perwakilan Rakyat', 'Presiden'],
+                correct: 3,
+                explanation: 'Hakim Agung diangkat oleh Presiden atas usul Komisi Yudisial kepada DPR untuk mendapatkan persetujuan, dan pemberhentiannya juga dilakukan oleh Presiden.'
+            },
+
+
+            // Benar/Salah (15 soal)
+            {
+                type: 'true-false',
+                question: 'Indonesia menganut sistem pemerintahan parlementer.',
+                correct: false,
+                explanation: 'Salah. Indonesia menganut sistem pemerintahan presidensial, bukan parlementer.'
+            },
+            {
+                type: 'true-false',
+                question: 'DPD memiliki kewenangan legislasi yang sama dengan DPR.',
+                correct: false,
+                explanation: 'Salah. DPD hanya memiliki kewenangan terbatas dalam legislasi, terutama yang berkaitan dengan daerah.'
+            },
+            {
+                type: 'true-false',
+                question: 'Presiden dapat membubarkan DPR jika terjadi konflik.',
+                correct: false,
+                explanation: 'Salah. Dalam sistem presidensial Indonesia, presiden tidak dapat membubarkan DPR.'
+            },
+            {
+                type: 'true-false',
+                question: 'Mahkamah Agung adalah pemegang kekuasaan kehakiman tertinggi.',
+                correct: true,
+                explanation: 'Benar. MA adalah pemegang kekuasaan kehakiman tertinggi di Indonesia.'
+            },
+            {
+                type: 'true-false',
+                question: 'Setiap warga negara Indonesia wajib memiliki agama.',
+                correct: false,
+                explanation: 'Salah. Meskipun sila pertama Pancasila adalah Ketuhanan YME, tidak ada kewajiban konstitusional untuk beragama.'
+            },
+            {
+                type: 'true-false',
+                question: 'Pemilu di Indonesia menggunakan sistem proporsional terbuka.',
+                correct: true,
+                explanation: 'Benar. Indonesia menggunakan sistem proporsional dengan daftar terbuka untuk pemilu legislatif.'
+            },
+            {
+                type: 'true-false',
+                question: 'Gubernur dapat membatalkan peraturan daerah kabupaten/kota.',
+                correct: true,
+                explanation: 'Benar. Gubernur memiliki kewenangan pembinaan dan pengawasan terhadap kabupaten/kota.'
+            },
+            {
+                type: 'true-false',
+                question: 'Hak asasi manusia bersifat universal dan tidak dapat dicabut.',
+                correct: true,
+                explanation: 'Benar. HAM bersifat universal, tidak dapat dicabut, dan melekat pada setiap manusia.'
+            },
+            {
+                type: 'true-false',
+                question: 'Partai politik dapat dibubarkan oleh pemerintah tanpa melalui pengadilan.',
+                correct: false,
+                explanation: 'Salah. Pembubaran partai politik hanya dapat dilakukan melalui putusan Mahkamah Konstitusi.'
+            },
+            {
+                type: 'true-false',
+                question: 'Anggota TNI dan Polri tidak memiliki hak pilih dalam pemilu.',
+                correct: false,
+                explanation: 'Salah. TNI dan Polri memiliki hak pilih tetapi tidak dapat dipilih dan tidak boleh berpolitik praktis.'
+            },
+            {
+                type: 'true-false',
+                question: 'Kebebasan berserikat dan berkumpul dapat dibatasi oleh undang-undang.',
+                correct: true,
+                explanation: 'Benar. Kebebasan berserikat dapat dibatasi oleh UU untuk kepentingan keamanan nasional dan ketertiban umum.'
+            },
+            {
+                type: 'true-false',
+                question: 'Presiden dapat mengeluarkan Perppu tanpa persetujuan DPR.',
+                correct: true,
+                explanation: 'Benar. Presiden dapat mengeluarkan Perppu dalam hal ihwal kegentingan yang memaksa, namun harus mendapat persetujuan DPR dalam persidangan berikutnya.'
+            },
+            {
+                type: 'true-false',
+                question: 'Semua keputusan MPR harus diambil dengan konsensus.',
+                correct: false,
+                explanation: 'Salah. Keputusan MPR dapat diambil melalui musyawarah mufakat atau voting jika diperlukan.'
+            },
+            {
+                type: 'true-false',
+                question: 'Komisi Yudisial berwenang mengawasi perilaku hakim.',
+                correct: true,
+                explanation: 'Benar. KY memiliki wewenang mengawasi perilaku hakim dan mengusulkan pengangkatan hakim agung.'
+            },
+            {
+                type: 'true-false',
+                question: 'Otonomi daerah memberikan kewenangan penuh kepada daerah untuk mengatur dirinya.',
+                correct: false,
+                explanation: 'Salah. Otonomi daerah bersifat terbatas, masih ada urusan yang menjadi kewenangan pemerintah pusat.'
+            },
+
+            // Multi Answer (5 soal)
+            {
+                type: 'multi-answer',
+                question: 'Lembaga negara yang termasuk dalam cabang kekuasaan eksekutif adalah...',
+                options: ['Presiden', 'DPR', 'Menteri', 'Gubernur', 'MA'],
+                correct: [0, 2, 3],
+                explanation: 'Cabang eksekutif terdiri dari Presiden, Menteri, dan Gubernur sebagai kepala daerah.'
+            },
+            {
+                type: 'multi-answer',
+                question: 'Hak-hak yang termasuk dalam hak sipil dan politik adalah...',
+                options: ['Hak hidup', 'Hak pendidikan', 'Hak memilih', 'Hak beragama', 'Hak kesehatan'],
+                correct: [0, 2, 3],
+                explanation: 'Hak sipil dan politik meliputi hak hidup, hak memilih, dan hak beragama.'
+            },
+            {
+                type: 'multi-answer',
+                question: 'Fungsi DPR menurut UUD 1945 adalah...',
+                options: ['Legislasi', 'Anggaran', 'Pengawasan', 'Eksekutif', 'Yudikatif'],
+                correct: [0, 1, 2],
+                explanation: 'DPR memiliki tiga fungsi utama: legislasi, anggaran, dan pengawasan.'
+            },
+            {
+                type: 'multi-answer',
+                question: 'Prinsip-prinsip demokrasi Pancasila meliputi...',
+                options: ['Musyawarah mufakat', 'Kekeluargaan', 'Gotong royong', 'Individualisme', 'Liberalisme'],
+                correct: [0, 1, 2],
+                explanation: 'Demokrasi Pancasila berdasarkan musyawarah mufakat, kekeluargaan, dan gotong royong.'
+            },
+            {
+                type: 'multi-answer',
+                question: 'Syarat untuk menjadi Presiden Indonesia adalah...',
+                options: ['WNI asli', 'Berusia minimal 35 tahun', 'Tidak pernah mengkhianati negara', 'Beragama Islam', 'Berpendidikan tinggi'],
+                correct: [0, 1, 2],
+                explanation: 'Syarat menjadi Presiden: WNI asli, minimal 35 tahun, dan tidak pernah mengkhianati negara.'
+            },
+
+            // SOAL HOTS (Pilihan Ganda + Benar/Salah + Multi Answer) - 5 soal (Sisa dari 56-50 = 6 soal dihapus)
+            // Dipertahankan 5 soal HOTS pertama
+            {
+                type: 'multiple-choice',
+                question: 'Seorang warga negara melaporkan dugaan korupsi pejabat daerah kepada KPK, namun kemudian mendapat ancaman. Berdasarkan prinsip negara hukum, tindakan yang paling tepat adalah...',
+                options: ['Mencabut laporan untuk keselamatan diri', 'Meminta perlindungan hukum kepada aparat penegak hukum', 'Menyebarkan informasi di media sosial', 'Meminta bantuan tokoh masyarakat setempat'],
+                correct: 1,
+                explanation: 'Dalam negara hukum, setiap warga negara berhak mendapat perlindungan hukum, termasuk whistleblower yang melaporkan tindak pidana korupsi.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Jika terjadi konflik antara peraturan daerah dengan undang-undang, maka berdasarkan hierarki peraturan perundang-undangan...',
+                options: ['Perda tetap berlaku karena sesuai kondisi daerah', 'UU yang berlaku karena kedudukannya lebih tinggi', 'Keduanya berlaku secara bersamaan', 'Diselesaikan melalui musyawarah DPRD'],
+                correct: 1,
+                explanation: 'Berdasarkan hierarki peraturan perundang-undangan, UU memiliki kedudukan lebih tinggi dari Perda, sehingga UU yang berlaku.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Dalam konteks demokrasi deliberatif, mengapa musyawarah mufakat lebih diutamakan daripada voting dalam pengambilan keputusan?',
+                options: ['Lebih cepat prosesnya', 'Menghindari konflik dan perpecahan', 'Lebih mudah dilaksanakan', 'Menghemat biaya'],
+                correct: 1,
+                explanation: 'Musyawarah mufakat dalam demokrasi deliberatif bertujuan mencapai konsensus yang dapat diterima semua pihak, menghindari konflik dan menjaga persatuan.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Seorang hakim memutus perkara berdasarkan tekanan politik dari penguasa. Hal ini melanggar prinsip...',
+                options: ['Supremasi hukum', 'Keadilan sosial', 'Persatuan Indonesia', 'Kedaulatan rakyat'],
+                correct: 0,
+                explanation: 'Keputusan hakim yang dipengaruhi tekanan politik melanggar prinsip supremasi hukum dan independensi peradilan.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Mengapa sistem checks and balances penting dalam sistem presidensial Indonesia?',
+                options: ['Mempercepat proses legislasi', 'Mencegah penyalahgunaan kekuasaan', 'Meningkatkan efisiensi pemerintahan', 'Mengurangi biaya operasional negara'],
+                correct: 1,
+                explanation: 'Sistem checks and balances mencegah konsentrasi kekuasaan pada satu lembaga dan mencegah penyalahgunaan kekuasaan.'
+            },
+            /*
+            // 6 Soal HOTS yang dihapus:
+            {
+                type: 'true-false',
+                question: 'Dalam situasi darurat, presiden dapat membatasi hak asasi manusia tanpa batas untuk menjaga keamanan negara.',
+                correct: false,
+                explanation: 'Salah. Meskipun dalam keadaan darurat HAM dapat dibatasi, namun ada hak-hak yang tidak dapat dikurangi dalam keadaan apapun (non-derogable rights).'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Jika mayoritas rakyat menginginkan pembatasan hak minoritas melalui pemilu, apakah hal ini sesuai dengan prinsip demokrasi konstitusional?',
+                options: ['Ya, karena sesuai kehendak mayoritas', 'Tidak, karena melanggar hak konstitusional minoritas', 'Ya, jika disetujui 2/3 suara', 'Tidak, kecuali ada persetujuan internasional'],
+                correct: 1,
+                explanation: 'Demokrasi konstitusional melindungi hak-hak minoritas dari tirani mayoritas melalui jaminan konstitusional.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Dalam era digital, bagaimana cara terbaik menyeimbangkan kebebasan berekspresi dengan pencegahan hate speech?',
+                options: ['Melarang semua platform media sosial', 'Membuat regulasi yang jelas dengan sanksi proporsional', 'Membiarkan masyarakat mengatur sendiri', 'Menyensor semua konten yang kontroversial'],
+                correct: 1,
+                explanation: 'Keseimbangan antara kebebasan berekspresi dan pencegahan hate speech memerlukan regulasi yang jelas, transparan, dan proporsional.'
+            },
+            {
+                type: 'true-false',
+                question: 'Otonomi daerah yang luas dapat berpotensi melemahkan persatuan nasional jika tidak dikelola dengan baik.',
+                correct: true,
+                explanation: 'Benar. Otonomi daerah yang tidak dikelola dengan baik dapat menimbulkan sentimen kedaerahan yang berlebihan dan melemahkan persatuan nasional.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Mengapa transparansi dan akuntabilitas menjadi kunci dalam good governance?',
+                options: ['Memudahkan kontrol pemerintah terhadap rakyat', 'Memungkinkan partisipasi dan pengawasan publik', 'Mengurangi beban kerja pemerintah', 'Mempercepat proses birokrasi'],
+                correct: 1,
+                explanation: 'Transparansi dan akuntabilitas memungkinkan masyarakat untuk berpartisipasi dan mengawasi kinerja pemerintah, menciptakan good governance.'
+            },
+            {
+                type: 'multi-answer',
+                question: 'Faktor-faktor yang dapat mengancam demokrasi di Indonesia adalah...',
+                options: ['Polarisasi politik yang ekstrem', 'Penyebaran hoaks dan disinformasi', 'Korupsi yang sistemik', 'Kebebasan pers', 'Partisipasi politik masyarakat'],
+                correct: [0, 1, 2],
+                explanation: 'Polarisasi ekstrem, hoaks/disinformasi, dan korupsi sistemik dapat mengancam demokrasi, sedangkan kebebasan pers dan partisipasi politik justru memperkuat demokrasi.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Dalam konteks globalisasi, bagaimana Indonesia dapat mempertahankan kedaulatan sambil tetap terbuka terhadap kerjasama internasional?',
+                options: ['Menutup diri dari pengaruh luar', 'Mengikuti semua standar internasional', 'Menerapkan prinsip kepentingan nasional dalam kerjasama', 'Bergantung sepenuhnya pada organisasi internasional'],
+                correct: 2,
+                explanation: 'Indonesia dapat mempertahankan kedaulatan dengan menerapkan prinsip kepentingan nasional dalam setiap kerjasama internasional.'
+            },
+            {
+                type: 'true-false',
+                question: 'Kebebasan beragama dalam Pancasila berarti setiap orang bebas tidak beragama sama sekali.',
+                correct: false,
+                explanation: 'Salah. Sila pertama Pancasila "Ketuhanan Yang Maha Esa" mengandung makna pengakuan terhadap Tuhan, meskipun memberikan kebebasan dalam memilih agama.'
+            },
+            {
+                type: 'multiple-choice',
+                question: 'Jika terjadi deadlock antara DPR dan Presiden dalam pembahasan APBN, solusi konstitusional yang tepat adalah...',
+                options: ['Presiden membubarkan DPR', 'Menggunakan APBN tahun sebelumnya', 'MPR mengambil alih pembahasan', 'Mahkamah Konstitusi memutuskan'],
+                correct: 1,
+                explanation: 'Jika APBN tidak disahkan tepat waktu, maka APBN tahun sebelumnya yang berlaku hingga APBN baru disahkan.'
+            },
+            {
+                type: 'multi-answer',
+                question: 'Indikator negara yang menerapkan rule of law dengan baik adalah...',
+                options: ['Supremasi hukum di atas segalanya', 'Kesetaraan di hadapan hukum', 'Peradilan yang independen', 'Hukum yang dapat diubah sewaktu-waktu', 'Penegakan hukum yang konsisten'],
+                correct: [0, 1, 2, 4],
+                explanation: 'Rule of law ditandai dengan supremasi hukum, kesetaraan di hadapan hukum, peradilan independen, dan penegakan hukum yang konsisten.'
+            }
+            */
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = [];
+        let quizStarted = false;
+        
+        // Konstanta untuk jumlah soal yang sebenarnya
+        const TOTAL_QUESTIONS = questions.length; 
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function startQuiz() {
+            quizStarted = true;
+            currentQuestion = 0;
+            score = 0;
+            // Inisialisasi userAnswers dengan ukuran yang benar
+            userAnswers = new Array(TOTAL_QUESTIONS).fill(null); 
+            
+            // Mengacak urutan pertanyaan setiap kali kuis dimulai
+            questions.sort(() => Math.random() - 0.5);
+            
+            generateQuestionNavigation();
+            showQuestion();
+            
+            // Memastikan teks progress awal benar
+            document.getElementById('progress-text').textContent = `0/${TOTAL_QUESTIONS}`;
+        }
+
+        function generateQuestionNavigation() {
+            const navContainer = document.getElementById('question-nav');
+            let navHtml = '';
+            
+            for (let i = 0; i < TOTAL_QUESTIONS; i++) { 
+                navHtml += `
+                    <button 
+                        class="question-nav-btn w-8 h-8 rounded text-sm font-medium transition-all duration-200 hover:scale-110" 
+                        data-question="${i}"
+                        onclick="goToQuestion(${i})"
+                        id="nav-btn-${i}"
+                    >
+                        ${i + 1}
+                    </button>
+                `;
+            }
+            
+            navContainer.innerHTML = navHtml;
+            updateNavigationStyles();
+        }
+
+        function updateNavigationStyles() {
+            for (let i = 0; i < TOTAL_QUESTIONS; i++) { 
+                const btn = document.getElementById(`nav-btn-${i}`);
+                if (!btn) continue;
+                
+                if (i === currentQuestion) {
+                    // Current question - blue
+                    btn.className = 'question-nav-btn w-8 h-8 rounded text-sm font-medium transition-all duration-200 hover:scale-110 bg-blue-500 text-white border-2 border-blue-600';
+                } else if (userAnswers[i] !== null) {
+                    // Answered question - green
+                    btn.className = 'question-nav-btn w-8 h-8 rounded text-sm font-medium transition-all duration-200 hover:scale-110 bg-green-500 text-white border-2 border-green-600';
+                } else {
+                    // Unanswered question - gray
+                    btn.className = 'question-nav-btn w-8 h-8 rounded text-sm font-medium transition-all duration-200 hover:scale-110 bg-gray-200 text-gray-700 border-2 border-gray-300 hover:bg-gray-300';
+                }
+            }
+        }
+
+        function goToQuestion(questionIndex) {
+            currentQuestion = questionIndex;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const container = document.getElementById('quiz-container');
+            const question = questions[currentQuestion];
+            
+            updateProgress();
+            updateNavigationStyles();
+            
+            let optionsHtml = '';
+            const savedAnswer = userAnswers[currentQuestion];
+            
+            if (question.type === 'multiple-choice') {
+                optionsHtml = question.options.map((option, index) => {
+                    const isSelected = savedAnswer === index;
+                    const selectedClass = isSelected ? 'border-indigo-500 bg-indigo-100' : 'border-gray-200';
+                    return `<button class="option-button w-full text-left p-4 rounded-lg border-2 ${selectedClass} hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-200 mb-3" onclick="selectAnswer(${index})">
+                        <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span> ${option}
+                    </button>`;
+                }).join('');
+            } else if (question.type === 'true-false') {
+                const trueSelected = savedAnswer === true ? 'border-green-500 bg-green-100' : 'border-gray-200';
+                const falseSelected = savedAnswer === false ? 'border-red-500 bg-red-100' : 'border-gray-200';
+                optionsHtml = `
+                    <button class="option-button w-full text-left p-4 rounded-lg border-2 ${trueSelected} hover:border-green-300 hover:bg-green-50 transition-all duration-200 mb-3" onclick="selectAnswer(true)">
+                        <span class="font-medium text-gray-700">✓</span> Benar
+                    </button>
+                    <button class="option-button w-full text-left p-4 rounded-lg border-2 ${falseSelected} hover:border-red-300 hover:bg-red-50 transition-all duration-200 mb-3" onclick="selectAnswer(false)">
+                        <span class="font-medium text-gray-700">✗</span> Salah
+                    </button>
+                `;
+            } else if (question.type === 'multi-answer') {
+                optionsHtml = question.options.map((option, index) => {
+                    // Checkbox status for multi-answer
+                    const isChecked = savedAnswer && Array.isArray(savedAnswer) && savedAnswer.includes(index) ? 'checked' : ''; 
+                    
+                    // Tambahkan kelas border-indigo-500 pada label jika checked untuk visual feedback
+                    const checkedClass = isChecked ? 'border-indigo-500 bg-indigo-100' : 'border-gray-200';
+                    
+                    return `<label class="option-button flex items-center w-full text-left p-4 rounded-lg border-2 ${checkedClass} hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-200 mb-3 cursor-pointer">
+                        <input type="checkbox" class="mr-3 w-4 h-4 text-indigo-600" value="${index}" onchange="updateMultiAnswer(this)" ${isChecked}>
+                        <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span> ${option}
+                    </label>`;
+                }).join('');
+                
+                // Cek apakah sudah ada selection
+                const hasSelection = savedAnswer && savedAnswer.length > 0;
+                optionsHtml += `
+                    <button id="submit-multi" class="w-full bg-indigo-600 text-white p-4 rounded-lg font-semibold hover:bg-indigo-700 transition-all duration-200 mt-4 disabled:opacity-50 disabled:cursor-not-allowed" onclick="submitMultiAnswer()" ${hasSelection ? '' : 'disabled'}>
+                        Jawab Pertanyaan
+                    </button>
+                `;
+            }
+            
+            // Navigation buttons
+            const navButtons = `
+                <div class="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                    <button onclick="previousQuestion()" class="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-200 ${currentQuestion === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${currentQuestion === 0 ? 'disabled' : ''}>
+                        ← Sebelumnya
+                    </button>
+                    <button onclick="nextQuestion()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-200">
+                        ${currentQuestion === TOTAL_QUESTIONS - 1 ? 'Selesai' : 'Selanjutnya'} →
+                    </button>
+                </div>
+            `;
+            
+            container.innerHTML = `
+                <div class="question-card">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
+                            Soal ${currentQuestion + 1}/${TOTAL_QUESTIONS}
+                        </span>
+                        <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                            ${question.type === 'multiple-choice' ? '📝 Pilihan Ganda' : 
+                              question.type === 'true-false' ? '✓✗ Benar/Salah' : 
+                              '☑️ Multi Jawaban'}
+                        </span>
+                    </div>
+                    
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6 leading-relaxed">
+                        ${question.question}
+                    </h2>
+                    
+                    <div class="space-y-3">
+                        ${optionsHtml}
+                    </div>
+                    
+                    ${navButtons}
+                </div>
+            `;
+        }
+
+        // Perbaikan: Tambahkan parameter element agar dapat memperbarui styling label
+        function updateMultiAnswer(checkboxElement) {
+            const checkboxes = document.querySelectorAll('#quiz-container input[type="checkbox"]');
+            const submitBtn = document.getElementById('submit-multi');
+            
+            // Update visual feedback pada label
+            checkboxes.forEach(cb => {
+                const label = cb.closest('label');
+                if (label) {
+                    if (cb.checked) {
+                        label.classList.add('border-indigo-500', 'bg-indigo-100');
+                        label.classList.remove('border-gray-200');
+                    } else {
+                        label.classList.remove('border-indigo-500', 'bg-indigo-100');
+                        label.classList.add('border-gray-200');
+                    }
+                }
+            });
+
+            const checkedCheckboxes = document.querySelectorAll('#quiz-container input[type="checkbox"]:checked');
+            submitBtn.disabled = checkedCheckboxes.length === 0;
+            
+            // Update saved answer
+            const selectedAnswers = Array.from(checkedCheckboxes).map(cb => parseInt(cb.value));
+            userAnswers[currentQuestion] = selectedAnswers;
+            updateNavigationStyles();
+        }
+
+        function selectAnswer(answer) {
+            // Save answer for MC/T-F immediately
+            userAnswers[currentQuestion] = answer;
+            updateNavigationStyles();
+            
+            // Show feedback immediately
+            showAnswerFeedback(answer);
+        }
+
+        function submitMultiAnswer() {
+            // Jawaban sudah tersimpan di `updateMultiAnswer` melalui event onchange pada checkbox.
+            // Panggil saja showAnswerFeedback
+            showAnswerFeedback(userAnswers[currentQuestion]);
+        }
+
+        function previousQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                showQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < TOTAL_QUESTIONS - 1) { 
+                currentQuestion++;
+                showQuestion();
+            } else {
+                // Logic untuk Selesai Kuis
+                const answeredCount = userAnswers.filter(answer => answer !== null).length;
+                const unanswered = TOTAL_QUESTIONS - answeredCount;
+                if (unanswered > 0) {
+                    showConfirmationModal(unanswered);
+                } else {
+                    calculateFinalScore();
+                    showResults();
+                }
+            }
+        }
+
+        function showConfirmationModal(unanswered) {
+            const modal = document.createElement('div');
+            modal.id = 'confirmation-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl p-8 max-w-md mx-4 text-center">
+                    <div class="text-6xl mb-4">⚠️</div>
+                    <h3 class="text-2xl font-bold mb-4 text-orange-600">Peringatan</h3>
+                    <p class="text-gray-700 mb-6">Masih ada ${unanswered} soal yang belum dijawab. Apakah Anda yakin ingin menyelesaikan kuis?</p>
+                    <div class="flex gap-4 justify-center">
+                        <button onclick="closeConfirmationModal()" class="px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-all duration-200">
+                            Batal
+                        </button>
+                        <button onclick="finishQuiz()" class="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all duration-200">
+                            Selesai
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function closeConfirmationModal() {
+            const modal = document.getElementById('confirmation-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function finishQuiz() {
+            closeConfirmationModal();
+            calculateFinalScore();
+            showResults();
+        }
+
+        function showAnswerFeedback(userAnswer) {
+            const question = questions[currentQuestion];
+            let isCorrect = false;
+            let correctAnswerText = '';
+            
+            if (question.type === 'multiple-choice') {
+                isCorrect = userAnswer === question.correct;
+                correctAnswerText = `${String.fromCharCode(65 + question.correct)}. ${question.options[question.correct]}`;
+            } else if (question.type === 'true-false') {
+                isCorrect = userAnswer === question.correct;
+                correctAnswerText = question.correct ? 'Benar' : 'Salah';
+            } else if (question.type === 'multi-answer') {
+                // Pastikan userAnswer adalah array sebelum di-sort dan stringify
+                const sortedUserAnswer = Array.isArray(userAnswer) ? userAnswer.sort((a, b) => a - b) : [];
+                const sortedCorrectAnswer = question.correct.sort((a, b) => a - b);
+                
+                isCorrect = JSON.stringify(sortedUserAnswer) === JSON.stringify(sortedCorrectAnswer);
+
+                correctAnswerText = question.correct.map(index => 
+                    `${String.fromCharCode(65 + index)}. ${question.options[index]}`
+                ).join(', ');
+            }
+            
+            // Create feedback modal
+            const modal = document.createElement('div');
+            modal.id = 'answer-feedback-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            
+            const feedbackIcon = isCorrect ? '🎉' : '❌';
+            const feedbackTitle = isCorrect ? 'Benar!' : 'Salah!';
+            const feedbackColor = isCorrect ? 'text-green-600' : 'text-red-600';
+            const feedbackBg = isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
+            
+            // Logika navigasi setelah feedback: Lanjut ke soal berikutnya atau tampilkan hasil
+            const nextAction = currentQuestion < TOTAL_QUESTIONS - 1 ? 'closeFeedbackModal(); nextQuestion();' : 'closeFeedbackModal(); finishQuiz();';
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl p-8 max-w-lg mx-4 text-center shadow-2xl">
+                    <div class="text-6xl mb-4">${feedbackIcon}</div>
+                    <h3 class="text-2xl font-bold mb-4 ${feedbackColor}">${feedbackTitle}</h3>
+                    
+                    ${!isCorrect ? `
+                        <div class="mb-6 p-4 ${feedbackBg} border rounded-lg text-left">
+                            <h4 class="font-semibold text-gray-800 mb-2">Jawaban yang benar:</h4>
+                            <p class="text-gray-700 font-medium">${correctAnswerText}</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
+                        <h4 class="font-semibold text-gray-800 mb-2">Penjelasan:</h4>
+                        <p class="text-gray-700">${question.explanation}</p>
+                    </div>
+                    
+                    <button onclick="${nextAction}" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-all duration-200 transform hover:scale-105">
+                        ${currentQuestion < TOTAL_QUESTIONS - 1 ? 'Lanjut ke Soal Berikutnya' : 'Lihat Hasil Kuis'}
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function closeFeedbackModal() {
+            const modal = document.getElementById('answer-feedback-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function calculateFinalScore() {
+            score = 0;
+            for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+                const question = questions[i];
+                const userAnswer = userAnswers[i];
+                
+                if (userAnswer === null) continue;
+                
+                let isCorrect = false;
+                if (question.type === 'multiple-choice') {
+                    isCorrect = userAnswer === question.correct;
+                } else if (question.type === 'true-false') {
+                    isCorrect = userAnswer === question.correct;
+                } else if (question.type === 'multi-answer') {
+                    // Pastikan userAnswer adalah array sebelum di-sort dan stringify
+                    const sortedUserAnswer = Array.isArray(userAnswer) ? userAnswer.sort((a, b) => a - b) : [];
+                    const sortedCorrectAnswer = question.correct.sort((a, b) => a - b);
+                    isCorrect = JSON.stringify(sortedUserAnswer) === JSON.stringify(sortedCorrectAnswer);
+                }
+                
+                if (isCorrect) {
+                    score++;
+                }
+            }
+        }
+
+
+        function updateProgress() {
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const answeredCount = userAnswers.filter(answer => answer !== null).length;
+            const percentage = (answeredCount / TOTAL_QUESTIONS) * 100; 
+            
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = `${answeredCount}/${TOTAL_QUESTIONS}`; 
+        }
+
+        function showResults() {
+            const quizContainer = document.getElementById('quiz-container');
+            const resultsContainer = document.getElementById('results-container');
+            
+            quizContainer.style.display = 'none';
+            resultsContainer.classList.remove('hidden');
+            
+            const percentage = Math.round((score / TOTAL_QUESTIONS) * 100); 
+            const incorrect = TOTAL_QUESTIONS - score; 
+            
+            document.getElementById('final-score').textContent = `${score}/${TOTAL_QUESTIONS}`; 
+            document.getElementById('correct-count').textContent = score;
+            document.getElementById('incorrect-count').textContent = incorrect;
+            document.getElementById('percentage').textContent = percentage + '%';
+            
+            // Update progress to 100%
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('progress-text').textContent = `${TOTAL_QUESTIONS}/${TOTAL_QUESTIONS}`; 
+            
+            let message = '';
+            let emoji = '';
+            
+            if (percentage >= 90) {
+                message = 'Luar biasa! Anda menguasai materi PKn dengan sangat baik!';
+                emoji = '🏆';
+            } else if (percentage >= 80) {
+                message = 'Bagus sekali! Pemahaman Anda tentang PKn sudah sangat baik!';
+                emoji = '🎉';
+            } else if (percentage >= 70) {
+                message = 'Baik! Anda cukup memahami materi PKn, terus belajar!';
+                emoji = '👏';
+            } else if (percentage >= 60) {
+                message = 'Cukup baik, masih perlu belajar lebih giat lagi!';
+                emoji = '📚';
+            } else {
+                message = 'Perlu belajar lebih keras lagi. Jangan menyerah!';
+                emoji = '💪';
+            }
+            
+            document.getElementById('score-message').textContent = message;
+            document.getElementById('result-emoji').textContent = emoji;
+        }
+
+        function restartQuiz() {
+            const quizContainer = document.getElementById('quiz-container');
+            const resultsContainer = document.getElementById('results-container');
+            
+            resultsContainer.classList.add('hidden');
+            quizContainer.style.display = 'block';
+            
+            // Reset progress dan gunakan TOTAL_QUESTIONS
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('progress-text').textContent = `0/${TOTAL_QUESTIONS}`;
+            
+            startQuiz();
+        }
+
+        // Initialize quiz
+        window.onload = function() {
+            startQuiz();
+        };
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9951ddd1d68797a7',t:'MTc2MTU2NDY4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
