@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LKPD Proyek: Sistem Kasir C++</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and IE 11 */
+            user-select: none; /* Standard syntax */
+            overflow-x: hidden;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card-mobile {
+             background: rgba(15, 23, 42, 0.95);
+             backdrop-filter: blur(10px);
+             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* Fade In Animation for Page Switching */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Active Menu Style */
+        .nav-link.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-bottom: 2px solid #3b82f6;
+        }
+
+        /* Radio button hidden for rubric selector */
+        .rubric-radio:checked + label {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            color: #60a5fa;
+        }
+        .rubric-radio:checked + label .check-icon {
+            opacity: 1;
+        }
+        
+        /* New Animation for Presentation Button */
+        @keyframes pulse-attention {
+            0% { 
+                box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 0 10px rgba(236, 72, 153, 0);
+                transform: scale(1.05);
+            }
+            100% { 
+                box-shadow: 0 0 0 0 rgba(236, 72, 153, 0);
+                transform: scale(1);
+            }
+        }
+        
+        .btn-eye-catching {
+            animation: pulse-attention 2s infinite;
+        }
+        
+        /* Typing animation cursor */
+        .cursor::after {
+            content: '|';
+            animation: blink 1s step-start infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full z-50 glass-card border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo Section -->
+                <div class="flex items-center gap-2 cursor-pointer" onclick="showPage('home')">
+                    <i data-lucide="terminal" class="text-blue-500 w-6 h-6"></i>
+                    <span class="font-bold text-xl tracking-tight">C++ Project<span class="text-blue-500">.Kasir</span></span>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-center space-x-2">
+                        <button onclick="showPage('home')" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition hover:text-white text-slate-300" data-target="home">Beranda</button>
+                        <button onclick="showPage('tujuan')" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition hover:text-white text-slate-300" data-target="tujuan">Tujuan</button>
+                        <button onclick="showPage('kebutuhan')" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition hover:text-white text-slate-300" data-target="kebutuhan">Persiapan</button>
+                        <button onclick="showPage('alur')" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition hover:text-white text-slate-300" data-target="alur">Logika</button>
+                        <button onclick="showPage('demo')" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition hover:text-white text-slate-300" data-target="demo">Demo</button>
+                        <button onclick="showPage('evaluasi')" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition hover:text-white text-slate-300" data-target="evaluasi">Evaluasi</button>
+                        
+                        <!-- External Link -->
+                        <a href="https://fauzanevan.github.io/contohpresentasiprodukrplxyzsmajaya.html" target="_blank" class="ml-2 btn-eye-catching bg-pink-600 hover:bg-pink-700 text-white px-3 py-2 rounded-md text-sm font-bold transition flex items-center gap-2 border border-pink-400">
+                            <i data-lucide="presentation" class="w-4 h-4"></i> Laporan
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="-mr-2 flex md:hidden">
+                    <button type="button" onclick="toggleMobileMenu()" class="bg-slate-800 inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white">
+                        <span class="sr-only">Open main menu</span>
+                        <i data-lucide="menu" class="block h-6 w-6" id="menu-icon"></i>
+                        <i data-lucide="x" class="hidden h-6 w-6" id="close-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div class="md:hidden hidden glass-card-mobile absolute w-full left-0 top-16 z-40" id="mobile-menu">
+            <div class="px-4 pt-2 pb-6 space-y-1 sm:px-3 flex flex-col items-center">
+                <button onclick="showPage('home')" class="nav-link-mobile text-slate-300 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-center hover:bg-slate-800" data-target="home">Beranda</button>
+                <button onclick="showPage('tujuan')" class="nav-link-mobile text-slate-300 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-center hover:bg-slate-800" data-target="tujuan">Tujuan</button>
+                <button onclick="showPage('kebutuhan')" class="nav-link-mobile text-slate-300 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-center hover:bg-slate-800" data-target="kebutuhan">Persiapan</button>
+                <button onclick="showPage('alur')" class="nav-link-mobile text-slate-300 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-center hover:bg-slate-800" data-target="alur">Logika</button>
+                <button onclick="showPage('demo')" class="nav-link-mobile text-slate-300 hover:text-white block px-3 py-3 rounded-md text-base font-medium w-full text-center hover:bg-slate-800" data-target="demo">Demo</button>
+                <button onclick="showPage('evaluasi')" class="nav-link-mobile bg-blue-600 text-white block px-3 py-3 rounded-md text-base font-bold w-full text-center mt-2" data-target="evaluasi">Evaluasi & Nilai</button>
+                 <a href="https://fauzanevan.github.io/contohpresentasiprodukrplxyzsmajaya.html" target="_blank" class="bg-pink-600 text-white block px-3 py-3 rounded-md text-base font-bold w-full text-center mt-2 flex justify-center items-center gap-2">
+                    <i data-lucide="presentation" class="w-4 h-4"></i> Contoh Laporan
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow pt-20 px-4 pb-12 max-w-7xl mx-auto w-full">
+
+        <!-- PAGE 1: HOME -->
+        <div id="page-home" class="page-section fade-in">
+            <div class="relative pt-12 md:pt-24 pb-12 text-center">
+                <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6">
+                    <span class="block">LKPD Pembuatan Aplikasi</span>
+                    <span class="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Sistem Kasir Sederhana</span>
+                </h1>
+                <p class="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-slate-400 leading-relaxed">
+                    Selamat datang di modul pembelajaran interaktif. Di sini kita akan belajar logika transaksi, penggunaan array, dan perulangan dengan membangun simulasi kasir C++.
+                </p>
+                
+                <div class="mt-10 flex justify-center gap-4 flex-wrap">
+                    <button onclick="showPage('tujuan')" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-full font-bold text-white transition shadow-lg shadow-blue-500/30 flex items-center gap-2">
+                        Mulai Belajar <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="showPage('demo')" class="px-8 py-3 bg-slate-700 hover:bg-slate-600 rounded-full font-bold text-white transition border border-slate-500 flex items-center gap-2">
+                        <i data-lucide="play-circle" class="w-4 h-4"></i> Lihat Demo Langsung
+                    </button>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 border-t border-slate-800 pt-8">
+                    <div class="p-4">
+                        <div class="text-3xl font-bold text-white">C++</div>
+                        <div class="text-sm text-slate-500">Bahasa</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="text-3xl font-bold text-white">4</div>
+                        <div class="text-sm text-slate-500">Komponen Utama</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="text-3xl font-bold text-white">Console</div>
+                        <div class="text-sm text-slate-500">Tipe Aplikasi</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="text-3xl font-bold text-white">90mnt</div>
+                        <div class="text-sm text-slate-500">Estimasi Waktu</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2: TUJUAN -->
+        <div id="page-tujuan" class="page-section hidden fade-in">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold">Latar Belakang & Tujuan</h2>
+                <p class="text-slate-400 mt-2">Mengapa kita membuat proyek ini?</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Latar Belakang -->
+                <div class="glass-card p-6 md:p-8 rounded-2xl relative overflow-hidden group hover:bg-slate-800 transition">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+                        <i data-lucide="shopping-cart" class="w-24 h-24 md:w-32 md:h-32"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-blue-400 flex items-center gap-2">
+                        <i data-lucide="info"></i> Latar Belakang
+                    </h3>
+                    <p class="text-slate-300 leading-relaxed text-sm md:text-base">
+                        Di era digital, pemahaman logika pemrograman sangat vital. Proyek ini mensimulasikan sistem kasir minimarket untuk melatih pemahaman alur transaksi, perhitungan total belanja, dan penerapan struktur data dasar dalam kasus nyata.
+                    </p>
+                </div>
+
+                <!-- Tujuan (List) -->
+                <div class="glass-card p-6 md:p-8 rounded-2xl">
+                    <h3 class="text-2xl font-bold mb-4 text-emerald-400 flex items-center gap-2">
+                        <i data-lucide="target"></i> Tujuan Pembelajaran
+                    </h3>
+                    <ul class="space-y-4 text-sm md:text-base">
+                        <li class="flex items-start gap-3 p-2 rounded hover:bg-slate-800/50 transition">
+                            <i data-lucide="check-circle-2" class="text-emerald-500 w-5 h-5 mt-1"></i>
+                            <div>
+                                <strong class="block text-white">Konsep Dasar</strong>
+                                <span class="text-slate-400">Menerapkan Variabel, Array, dan Perulangan (Looping).</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3 p-2 rounded hover:bg-slate-800/50 transition">
+                            <i data-lucide="check-circle-2" class="text-emerald-500 w-5 h-5 mt-1"></i>
+                             <div>
+                                <strong class="block text-white">Algoritma</strong>
+                                <span class="text-slate-400">Membuat algoritma perhitungan total belanja & diskon otomatis.</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3 p-2 rounded hover:bg-slate-800/50 transition">
+                            <i data-lucide="check-circle-2" class="text-emerald-500 w-5 h-5 mt-1"></i>
+                             <div>
+                                <strong class="block text-white">Kreativitas</strong>
+                                <span class="text-slate-400">Mengembangkan fitur tambahan seperti PPN, Login Admin, atau Cetak Struk.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mt-8 flex justify-end">
+                <button onclick="showPage('kebutuhan')" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition flex items-center gap-2">
+                    Lanjut: Persiapan <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- PAGE 3: PERSIAPAN (KEBUTUHAN) -->
+        <div id="page-kebutuhan" class="page-section hidden fade-in">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold">Persiapan Proyek</h2>
+                <p class="text-slate-400 mt-2">Apa saja yang dibutuhkan untuk memulai?</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <!-- Hardware -->
+                <div class="glass-card p-8 rounded-2xl text-center hover:bg-slate-800/50 transition">
+                    <h3 class="text-xl font-semibold mb-6 text-slate-300 flex justify-center items-center gap-2"><i data-lucide="cpu"></i> Perangkat Keras</h3>
+                    <div class="flex justify-center gap-8">
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center text-blue-400 mb-2">
+                                <i data-lucide="laptop" class="w-8 h-8"></i>
+                            </div>
+                            <span class="text-sm font-bold">Laptop / PC</span>
+                            <span class="text-xs text-slate-500">Windows/Mac/Linux</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center text-blue-400 mb-2">
+                                <i data-lucide="memory-stick" class="w-8 h-8"></i>
+                            </div>
+                            <span class="text-sm font-bold">RAM</span>
+                            <span class="text-xs text-slate-500">Min. 4GB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Software -->
+                <div class="glass-card p-8 rounded-2xl text-center hover:bg-slate-800/50 transition">
+                    <h3 class="text-xl font-semibold mb-6 text-slate-300 flex justify-center items-center gap-2"><i data-lucide="code-2"></i> Software (IDE)</h3>
+                    <div class="flex justify-center gap-8">
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="w-16 h-16 bg-indigo-900 rounded-full flex items-center justify-center text-white border border-indigo-500 mb-2 shadow-lg shadow-indigo-500/20">
+                                <span class="font-bold text-xs">VS Code</span>
+                            </div>
+                            <span class="text-sm font-bold">Visual Studio Code</span>
+                            <span class="text-xs text-slate-500">Rekomendasi</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="w-16 h-16 bg-orange-900 rounded-full flex items-center justify-center text-white border border-orange-500 mb-2 shadow-lg shadow-orange-500/20">
+                                <span class="font-bold text-xs">Dev C++</span>
+                            </div>
+                            <span class="text-sm font-bold">Dev C++</span>
+                            <span class="text-xs text-slate-500">Alternatif Ringan</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="mt-8 flex justify-between">
+                <button onclick="showPage('tujuan')" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Sebelumnya
+                </button>
+                <button onclick="showPage('alur')" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition flex items-center gap-2">
+                    Lanjut: Logika <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- PAGE 4: LOGIKA (ALUR) -->
+        <div id="page-alur" class="page-section hidden fade-in">
+             <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold">Logika Program & Struktur Data</h2>
+                <p class="text-slate-400 mt-2">Bagaimana program ini bekerja di balik layar?</p>
+            </div>
+
+            <!-- Variables visualization -->
+            <div class="mb-12 text-center">
+                <h4 class="text-slate-400 mb-4 uppercase text-sm tracking-wider">Variabel Utama yang Dibutuhkan</h4>
+                <div class="flex flex-wrap justify-center gap-2 md:gap-4">
+                    <span class="px-3 py-2 bg-pink-900/50 border border-pink-500 rounded-lg text-pink-300 font-mono text-xs md:text-sm">string namaBarang[]</span>
+                    <span class="px-3 py-2 bg-purple-900/50 border border-purple-500 rounded-lg text-purple-300 font-mono text-xs md:text-sm">int harga[]</span>
+                    <span class="px-3 py-2 bg-yellow-900/50 border border-yellow-500 rounded-lg text-yellow-300 font-mono text-xs md:text-sm">int jumlah[]</span>
+                    <span class="px-3 py-2 bg-green-900/50 border border-green-500 rounded-lg text-green-300 font-mono text-xs md:text-sm">long total</span>
+                </div>
+            </div>
+
+            <!-- Logic Steps Timeline -->
+            <div class="relative max-w-4xl mx-auto">
+                <div class="absolute left-1/2 w-1 bg-slate-700 h-full -translate-x-1/2 hidden md:block"></div>
+                
+                <div class="space-y-12 md:space-y-8">
+                    <!-- Step 1 -->
+                    <div class="flex flex-col-reverse md:flex-row items-center justify-between relative">
+                        <div class="w-full md:w-5/12 p-6 glass-card rounded-xl border-t-4 md:border-t-0 md:border-l-4 border-blue-500 text-center md:text-right hover:scale-105 transition duration-300">
+                            <h4 class="font-bold text-lg text-white">1. Input Data</h4>
+                            <p class="text-slate-400 text-sm mt-2">User memasukkan nama, harga, dan jumlah barang. Gunakan <span class="text-blue-400 font-mono">For Loop</span> jika barang lebih dari satu.</p>
+                        </div>
+                        <div class="bg-blue-500 w-10 h-10 rounded-full flex items-center justify-center z-10 border-4 border-slate-900 shrink-0 mb-4 md:my-0 shadow-lg shadow-blue-500/50">
+                            <span class="text-sm font-bold">1</span>
+                        </div>
+                        <div class="w-full md:w-5/12 md:pl-8"></div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex flex-col md:flex-row items-center justify-between relative">
+                        <div class="w-full md:w-5/12"></div>
+                        <div class="bg-blue-500 w-10 h-10 rounded-full flex items-center justify-center z-10 border-4 border-slate-900 shrink-0 mb-4 md:my-0 shadow-lg shadow-blue-500/50">
+                            <span class="text-sm font-bold">2</span>
+                        </div>
+                        <div class="w-full md:w-5/12 p-6 glass-card rounded-xl border-t-4 md:border-t-0 md:border-l-4 border-blue-500 text-center md:text-left hover:scale-105 transition duration-300">
+                            <h4 class="font-bold text-lg text-white">2. Proses Hitung</h4>
+                            <p class="text-slate-400 text-sm mt-2">
+                                <code class="bg-slate-800 px-1 rounded">Subtotal = Harga * Jumlah</code><br>
+                                Akumulasikan ke variabel <code class="bg-slate-800 px-1 rounded">Total</code>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex flex-col-reverse md:flex-row items-center justify-between relative">
+                        <div class="w-full md:w-5/12 p-6 glass-card rounded-xl border-t-4 md:border-t-0 md:border-l-4 border-yellow-500 text-center md:text-right hover:scale-105 transition duration-300">
+                            <h4 class="font-bold text-lg text-white">3. Cek Diskon (Logika IF)</h4>
+                            <p class="text-slate-400 text-sm mt-2">Jika Total > 100.000, berikan diskon 10%. Hitung Grand Total setelah dipotong diskon.</p>
+                        </div>
+                        <div class="bg-yellow-500 w-10 h-10 rounded-full flex items-center justify-center z-10 border-4 border-slate-900 shrink-0 mb-4 md:my-0 shadow-lg shadow-yellow-500/50">
+                            <span class="text-sm font-bold">3</span>
+                        </div>
+                        <div class="w-full md:w-5/12"></div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="flex flex-col md:flex-row items-center justify-between relative">
+                        <div class="w-full md:w-5/12"></div>
+                        <div class="bg-emerald-500 w-10 h-10 rounded-full flex items-center justify-center z-10 border-4 border-slate-900 shrink-0 mb-4 md:my-0 shadow-lg shadow-emerald-500/50">
+                            <span class="text-sm font-bold">4</span>
+                        </div>
+                        <div class="w-full md:w-5/12 p-6 glass-card rounded-xl border-t-4 md:border-t-0 md:border-l-4 border-emerald-500 text-center md:text-left hover:scale-105 transition duration-300">
+                            <h4 class="font-bold text-lg text-white">4. Output Struk</h4>
+                            <p class="text-slate-400 text-sm mt-2">Tampilkan daftar belanjaan dengan rapi menggunakan <code class="bg-slate-800 px-1 rounded">cout</code> dan manipulasi spasi/tab.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="mt-8 flex justify-between">
+                <button onclick="showPage('kebutuhan')" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Sebelumnya
+                </button>
+                <button onclick="showPage('demo')" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition flex items-center gap-2">
+                    Lanjut: Demo <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- PAGE 5: DEMO -->
+        <div id="page-demo" class="page-section hidden fade-in">
+             <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold">Gambaran Output (Demo)</h2>
+                <p class="text-slate-400 mt-2">Simulasi hasil akhir program Console Application kalian.</p>
+            </div>
+
+            <!-- Mock Terminal Window -->
+            <div class="max-w-4xl mx-auto w-full rounded-lg overflow-hidden shadow-2xl border border-slate-700 bg-[#0d1117] relative">
+                <!-- Terminal Header -->
+                <div class="bg-slate-800 px-4 py-2 flex items-center gap-2">
+                    <div class="flex gap-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                    <div class="ml-4 text-xs text-slate-400 font-mono truncate">C:\Users\Siswa\ProjectKasir\main.exe</div>
+                </div>
+                <!-- Terminal Body -->
+                <div class="p-4 md:p-6 font-mono text-xs md:text-sm lg:text-base h-[400px] overflow-y-auto" id="terminal-body">
+                    <div class="text-emerald-400 font-bold mb-4">=== APLIKASI KASIR SEDERHANA ===</div>
+                    
+                    <div id="typewriter-content">
+                        <!-- Content injected by JS -->
+                    </div>
+                    <div class="text-slate-500 mt-2 animate-pulse">_</div>
+                </div>
+                
+                <!-- Replay Overlay -->
+                <div class="absolute bottom-4 right-4">
+                     <button onclick="runSimulation()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition text-sm shadow-lg">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Restart Demo
+                    </button>
+                </div>
+            </div>
+            
+             <div class="mt-8 flex justify-between">
+                <button onclick="showPage('alur')" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Sebelumnya
+                </button>
+                <button onclick="showPage('evaluasi')" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition flex items-center gap-2">
+                    Lanjut: Evaluasi <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- PAGE 6: EVALUASI -->
+        <div id="page-evaluasi" class="page-section hidden fade-in">
+             <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold">Evaluasi & Penilaian</h2>
+                <p class="text-slate-400 mt-2">Parameter penilaian dan simulasi skor.</p>
+            </div>
+
+            <!-- Part 1: Analisis Penilaian Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                <div class="glass-card p-6 rounded-xl border-l-4 border-blue-500">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-lg">Kebenaran Logika</h4>
+                        <span class="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded">Baik</span>
+                    </div>
+                    <p class="text-sm text-slate-300">Logika dasar C++ sudah dikuasai, perlu sedikit perbaikan pada detail perhitungan.</p>
+                </div>
+                
+                <div class="glass-card p-6 rounded-xl border-l-4 border-yellow-500">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-lg">Kerapian Kode</h4>
+                        <span class="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded">Cukup-Baik</span>
+                    </div>
+                    <p class="text-sm text-slate-300">Kode berjalan, namun konsistensi penulisan dan komentar perlu ditingkatkan.</p>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl border-l-4 border-emerald-500">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-lg">Kelengkapan Fitur</h4>
+                        <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded">Sangat Baik</span>
+                    </div>
+                    <p class="text-sm text-slate-300">Hampir seluruh siswa memenuhi bahkan melebihi fitur minimal.</p>
+                </div>
+
+                 <div class="glass-card p-6 rounded-xl border-l-4 border-purple-500">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-lg">Kreativitas</h4>
+                        <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded">Baik</span>
+                    </div>
+                    <p class="text-sm text-slate-300">Ada inovasi yang bervariasi; siswa kreatif membuat fitur tambahan.</p>
+                </div>
+
+                 <div class="glass-card p-6 rounded-xl border-l-4 border-red-500">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-lg">Error-Free</h4>
+                        <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded">Baik</span>
+                    </div>
+                    <p class="text-sm text-slate-300">Mayoritas program lancar; butuh peningkatan validasi input.</p>
+                </div>
+            </div>
+
+            <!-- Part 2: Interactive Grading Simulation -->
+            <div class="glass-card p-4 md:p-8 rounded-2xl border border-slate-700">
+                <div class="flex flex-col justify-center items-center mb-8 gap-2 text-center">
+                    <h3 class="text-xl md:text-2xl font-bold flex items-center justify-center gap-2">
+                        <i data-lucide="clipboard-check" class="text-blue-400"></i> Simulasi Rubrik Penilaian
+                    </h3>
+                    <p class="text-slate-400 text-sm mt-1">Pilih poin kriteria untuk melihat prediksi nilai akhir.</p>
+                </div>
+
+                <form id="grading-form" class="space-y-8">
+                    <!-- Criteria 1 -->
+                    <div class="border-b border-slate-700 pb-6">
+                        <div class="flex justify-between mb-4">
+                            <h4 class="font-bold text-base md:text-lg">1. Kebenaran Logika Program <span class="text-blue-400 text-sm">(30%)</span></h4>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                                <input type="radio" name="c1" id="c1-4" value="4" class="rubric-radio hidden" checked onchange="calculateScore()">
+                                <label for="c1-4" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-emerald-400 block mb-1">Skor 4</span>
+                                    <p class="text-xs text-slate-300">Semua logika benar, alur sangat jelas.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c1" id="c1-3" value="3" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c1-3" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-blue-400 block mb-1">Skor 3</span>
+                                    <p class="text-xs text-slate-300">1-2 kesalahan kecil, alur tetap jelas.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c1" id="c1-2" value="2" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c1-2" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-yellow-400 block mb-1">Skor 2</span>
+                                    <p class="text-xs text-slate-300">Logika ada beberapa kesalahan.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c1" id="c1-1" value="1" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c1-1" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-red-400 block mb-1">Skor 1</span>
+                                    <p class="text-xs text-slate-300">Logika banyak salah.</p>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Criteria 2 -->
+                    <div class="border-b border-slate-700 pb-6">
+                        <div class="flex justify-between mb-4">
+                            <h4 class="font-bold text-base md:text-lg">2. Struktur & Kerapian Kode <span class="text-blue-400 text-sm">(20%)</span></h4>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                             <div>
+                                <input type="radio" name="c2" id="c2-4" value="4" class="rubric-radio hidden" checked onchange="calculateScore()">
+                                <label for="c2-4" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-emerald-400 block mb-1">Skor 4</span>
+                                    <p class="text-xs text-slate-300">Rapi, variabel jelas, komentar lengkap.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c2" id="c2-3" value="3" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c2-3" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-blue-400 block mb-1">Skor 3</span>
+                                    <p class="text-xs text-slate-300">Cukup baik, komentar sebagian.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c2" id="c2-2" value="2" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c2-2" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-yellow-400 block mb-1">Skor 2</span>
+                                    <p class="text-xs text-slate-300">Kurang rapi, minim komentar.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c2" id="c2-1" value="1" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c2-1" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-red-400 block mb-1">Skor 1</span>
+                                    <p class="text-xs text-slate-300">Berantakan, sulit dibaca.</p>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Criteria 3 -->
+                    <div class="border-b border-slate-700 pb-6">
+                        <div class="flex justify-between mb-4">
+                            <h4 class="font-bold text-base md:text-lg">3. Kelengkapan Fitur <span class="text-blue-400 text-sm">(30%)</span></h4>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                                <input type="radio" name="c3" id="c3-4" value="4" class="rubric-radio hidden" checked onchange="calculateScore()">
+                                <label for="c3-4" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-emerald-400 block mb-1">Skor 4</span>
+                                    <p class="text-xs text-slate-300">Lengkap & berfungsi sempurna.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c3" id="c3-3" value="3" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c3-3" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-blue-400 block mb-1">Skor 3</span>
+                                    <p class="text-xs text-slate-300">Lengkap tapi ada minor error.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c3" id="c3-2" value="2" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c3-2" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-yellow-400 block mb-1">Skor 2</span>
+                                    <p class="text-xs text-slate-300">Ada fitur tidak optimal.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c3" id="c3-1" value="1" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c3-1" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-red-400 block mb-1">Skor 1</span>
+                                    <p class="text-xs text-slate-300">Tidak lengkap.</p>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Criteria 4 -->
+                    <div class="border-b border-slate-700 pb-6">
+                        <div class="flex justify-between mb-4">
+                            <h4 class="font-bold text-base md:text-lg">4. Kreativitas <span class="text-blue-400 text-sm">(10%)</span></h4>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                             <div>
+                                <input type="radio" name="c4" id="c4-4" value="4" class="rubric-radio hidden" checked onchange="calculateScore()">
+                                <label for="c4-4" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-emerald-400 block mb-1">Skor 4</span>
+                                    <p class="text-xs text-slate-300">Ada fitur kreatif (menu, file, dll).</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c4" id="c4-3" value="3" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c4-3" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-blue-400 block mb-1">Skor 3</span>
+                                    <p class="text-xs text-slate-300">Fitur tambahan sederhana.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c4" id="c4-2" value="2" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c4-2" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-yellow-400 block mb-1">Skor 2</span>
+                                    <p class="text-xs text-slate-300">Fitur tambahan terbatas.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c4" id="c4-1" value="1" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c4-1" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-red-400 block mb-1">Skor 1</span>
+                                    <p class="text-xs text-slate-300">Tidak ada kreativitas.</p>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                     <!-- Criteria 5 -->
+                    <div class="pb-2">
+                        <div class="flex justify-between mb-4">
+                            <h4 class="font-bold text-base md:text-lg">5. Error-Free <span class="text-blue-400 text-sm">(10%)</span></h4>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                             <div>
+                                <input type="radio" name="c5" id="c5-4" value="4" class="rubric-radio hidden" checked onchange="calculateScore()">
+                                <label for="c5-4" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-emerald-400 block mb-1">Skor 4</span>
+                                    <p class="text-xs text-slate-300">Lancar tanpa error.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c5" id="c5-3" value="3" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c5-3" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-blue-400 block mb-1">Skor 3</span>
+                                    <p class="text-xs text-slate-300">Ada 1-2 bug kecil.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c5" id="c5-2" value="2" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c5-2" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-yellow-400 block mb-1">Skor 2</span>
+                                    <p class="text-xs text-slate-300">Ada bug mengganggu.</p>
+                                </label>
+                            </div>
+                            <div>
+                                <input type="radio" name="c5" id="c5-1" value="1" class="rubric-radio hidden" onchange="calculateScore()">
+                                <label for="c5-1" class="block h-full p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-800 transition relative">
+                                    <span class="font-bold text-red-400 block mb-1">Skor 1</span>
+                                    <p class="text-xs text-slate-300">Tidak berjalan.</p>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Result Section -->
+                    <div class="pt-8 border-t border-slate-700 mt-8">
+                         <div class="bg-slate-900 p-6 md:p-8 rounded-xl border border-slate-700 text-center max-w-sm mx-auto shadow-2xl">
+                            <h4 class="text-slate-300 font-bold mb-4 tracking-wider uppercase text-sm">Hasil Evaluasi</h4>
+                            
+                            <div class="flex items-baseline justify-center gap-2 mb-2">
+                                <span id="final-score" class="text-6xl md:text-7xl font-extrabold text-emerald-400 drop-shadow-lg">0</span>
+                                <span class="text-slate-500 text-xl md:text-2xl font-bold">/ 100</span>
+                            </div>
+                            
+                            <div class="mt-4 p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                                <p id="score-feedback" class="text-sm md:text-base font-medium text-slate-400">Silakan lengkapi semua kriteria di atas.</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+             <div class="mt-8 flex justify-start">
+                <button onclick="showPage('demo')" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Sebelumnya
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 py-6 text-center text-slate-500 text-sm">
+        <p>LKPD Digital - DasPPL</p>
+        <p class="mt-1">GuruMapel-Iqbal Alif Utama</p>
+    </footer>
+
+    <!-- Script for SPA Logic & Simulation -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // --- SPA NAVIGATION LOGIC ---
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.add('hidden');
+                page.classList.remove('fade-in'); // Remove class to reset animation
+            });
+
+            // Show active page
+            const activePage = document.getElementById('page-' + pageId);
+            if(activePage){
+                activePage.classList.remove('hidden');
+                void activePage.offsetWidth; // Trigger reflow to restart animation
+                activePage.classList.add('fade-in');
+            }
+
+            // Update Active State in Desktop Nav
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if(link.getAttribute('data-target') === pageId) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+
+            // Update Active State in Mobile Nav
+             document.querySelectorAll('.nav-link-mobile').forEach(link => {
+                if(link.getAttribute('data-target') === pageId) {
+                    link.classList.add('text-blue-400');
+                    link.classList.remove('text-slate-300');
+                } else {
+                    link.classList.remove('text-blue-400');
+                    link.classList.add('text-slate-300');
+                }
+            });
+
+            // Scroll to top
+            window.scrollTo(0,0);
+
+            // Close mobile menu if open
+            const menu = document.getElementById('mobile-menu');
+            if (!menu.classList.contains('hidden')) {
+                toggleMobileMenu();
+            }
+
+            // Run simulation typing if demo page is shown
+            if(pageId === 'demo') {
+                 // Optional: Reset simulation when entering demo page
+                 // runSimulation(); 
+            }
+        }
+
+        // Initialize Home Page as Active
+        document.addEventListener('DOMContentLoaded', () => {
+             showPage('home');
+             runSimulation(); // Start typing in background so it's ready
+        });
+
+        // --- MOBILE MENU TOGGLE LOGIC ---
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const menuIcon = document.getElementById('menu-icon');
+            const closeIcon = document.getElementById('close-icon');
+
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                menuIcon.classList.add('hidden');
+                closeIcon.classList.remove('hidden');
+            } else {
+                menu.classList.add('hidden');
+                menuIcon.classList.remove('hidden');
+                closeIcon.classList.add('hidden');
+            }
+        }
+
+        // --- TYPEWRITER SIMULATION ---
+        const terminalContent = [
+            { text: "Masukkan Jumlah Barang: ", input: "2" },
+            { text: "------------------------------", input: null },
+            { text: "Barang ke-1", input: null },
+            { text: "Nama Barang  : ", input: "Buku Tulis" },
+            { text: "Harga Satuan : ", input: "5000" },
+            { text: "Jumlah Beli  : ", input: "10" },
+            { text: "", input: null }, // Spacer
+            { text: "Barang ke-2", input: null },
+            { text: "Nama Barang  : ", input: "Pulpen" },
+            { text: "Harga Satuan : ", input: "3000" },
+            { text: "Jumlah Beli  : ", input: "5" },
+            { text: "------------------------------", input: null },
+            { text: "PROCESSING...", input: null, delay: 1000 },
+            { text: "==============================", input: null },
+            { text: "       STRUK BELANJA", input: null },
+            { text: "==============================", input: null },
+            { text: "1. Buku Tulis  x10  = Rp 50.000", input: null },
+            { text: "2. Pulpen      x5   = Rp 15.000", input: null },
+            { text: "------------------------------", input: null },
+            { text: "Sub Total      : Rp 65.000", input: null },
+            { text: "Diskon (0%)    : Rp 0", input: null },
+            { text: "------------------------------", input: null },
+            { text: "GRAND TOTAL    : Rp 65.000", input: null, highlight: true },
+            { text: "==============================", input: null },
+            { text: "Terima Kasih!", input: null }
+        ];
+
+        const container = document.getElementById('typewriter-content');
+
+        async function typeLine(text, input, highlight = false, delay = 50) {
+            const lineDiv = document.createElement('div');
+            lineDiv.className = "mb-1";
+            container.appendChild(lineDiv);
+            
+            // Text Part
+            const textSpan = document.createElement('span');
+            textSpan.className = highlight ? "text-yellow-400 font-bold" : "text-slate-300";
+            lineDiv.appendChild(textSpan);
+
+            for (let i = 0; i < text.length; i++) {
+                textSpan.textContent += text.charAt(i);
+                await new Promise(r => setTimeout(r, 5)); // Faster typing speed
+            }
+
+            // Input Part (if simulating user input)
+            if (input) {
+                const inputSpan = document.createElement('span');
+                inputSpan.className = "text-white ml-2 font-bold";
+                lineDiv.appendChild(inputSpan);
+                await new Promise(r => setTimeout(r, 200)); 
+                
+                for (let i = 0; i < input.length; i++) {
+                    inputSpan.textContent += input.charAt(i);
+                    await new Promise(r => setTimeout(r, 50)); 
+                }
+            }
+            
+            // Auto scroll to bottom
+            const termBody = document.getElementById('terminal-body');
+            termBody.scrollTop = termBody.scrollHeight;
+        }
+
+        async function runSimulation() {
+            container.innerHTML = '';
+            for (const line of terminalContent) {
+                if(line.delay) await new Promise(r => setTimeout(r, line.delay));
+                await typeLine(line.text, line.input, line.highlight);
+            }
+        }
+
+        // --- RUBRIC CALCULATION LOGIC ---
+        function calculateScore() {
+            // Get selected values (Safe navigation in case user hasn't selected all)
+            const getVal = (name) => {
+                const el = document.querySelector(`input[name="${name}"]:checked`);
+                return el ? parseInt(el.value) : 0;
+            };
+
+            const c1 = getVal('c1');
+            const c2 = getVal('c2');
+            const c3 = getVal('c3');
+            const c4 = getVal('c4');
+            const c5 = getVal('c5');
+
+            // If any is 0 (not selected), we can still show partial score or 0
+            
+            // Weights: c1(30%), c2(20%), c3(30%), c4(10%), c5(10%)
+            const score1 = (c1 / 4) * 30;
+            const score2 = (c2 / 4) * 20;
+            const score3 = (c3 / 4) * 30;
+            const score4 = (c4 / 4) * 10;
+            const score5 = (c5 / 4) * 10;
+
+            const totalScore = Math.round(score1 + score2 + score3 + score4 + score5);
+            
+            // Animate Score update
+            const scoreEl = document.getElementById('final-score');
+            const feedbackEl = document.getElementById('score-feedback');
+            scoreEl.innerText = totalScore;
+            
+            // Color coding & Feedback
+            if (totalScore >= 85) {
+                scoreEl.className = "text-6xl md:text-7xl font-extrabold text-emerald-400 drop-shadow-lg";
+                feedbackEl.innerText = "Luar Biasa! Kompetensi Sangat Baik.";
+                feedbackEl.className = "text-sm md:text-base font-bold text-emerald-400";
+            } else if (totalScore >= 70) {
+                scoreEl.className = "text-6xl md:text-7xl font-extrabold text-blue-400 drop-shadow-lg";
+                feedbackEl.innerText = "Baik! Kompetensi tercapai dengan baik.";
+                feedbackEl.className = "text-sm md:text-base font-bold text-blue-400";
+            } else if (totalScore >= 50) {
+                scoreEl.className = "text-6xl md:text-7xl font-extrabold text-yellow-400 drop-shadow-lg";
+                feedbackEl.innerText = "Cukup. Perlu perbaikan di beberapa aspek.";
+                feedbackEl.className = "text-sm md:text-base font-bold text-yellow-400";
+            } else {
+                scoreEl.className = "text-6xl md:text-7xl font-extrabold text-red-400 drop-shadow-lg";
+                feedbackEl.innerText = "Kurang. Perlu remedial dan perbaikan total.";
+                feedbackEl.className = "text-sm md:text-base font-bold text-red-400";
+            }
+        }
+
+        // --- ANTI INSPECT & RIGHT CLICK PROTECTION ---
+        document.addEventListener('contextmenu', event => {
+            event.preventDefault();
+            alert("mau lihat source bilang dulu sama guru ppkn");
+        });
+
+        document.addEventListener('keydown', function(e) {
+            // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
+            if (e.keyCode == 123 || 
+               (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0) || e.keyCode == 'C'.charCodeAt(0))) ||
+               (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
+                e.preventDefault();
+                alert("mau lihat source bilang dulu sama guru ppkn");
+                return false;
+            }
+        });
+
+    </script>
+</body>
+</html>
